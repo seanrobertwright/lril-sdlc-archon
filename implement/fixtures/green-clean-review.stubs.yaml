@@ -1,0 +1,36 @@
+# Green path with a clean review: address and recheck are condition-skipped, no
+# PR is asked for, and the real outcome script reports the run.
+fetch:
+  kind: github
+  ref: "#42"
+  number: 42
+  title: "stub: saved cards at checkout"
+  path: ""
+  spec_path: "/tmp/work-spec.md"
+  has_parent_spec: true
+  start_sha: "0000000000000000000000000000000000000000"
+build:
+  done: true
+  green: true
+  summary: "stub: built test-first at the checkout seam"
+  check_commands: ["npm test"]
+gate: { passed: true, commits: 2, checks: 1 }
+review__pin:
+  fixed_point: "0000000"
+  diff_command: "git diff 0000000...HEAD"
+  commit_count: 2
+  spec_path: "/tmp/work-spec.md"
+  spec_source: "file /tmp/work-spec.md"
+  standards: []
+review__standards: { hard_violations: 0, judgement_calls: 0, worst: "" }
+review__spec-axis: { missing: 0, scope_creep: 0, wrong: 0, worst: "" }
+review__aggregate:
+  has_findings: false
+  blocking: false
+  standards_findings: 0
+  spec_findings: 0
+  summary: "stub: no findings on either axis"
+fixture:
+  expect: completed
+  reached: [outcome]
+exec-code: true

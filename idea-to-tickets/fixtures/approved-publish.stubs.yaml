@@ -1,0 +1,14 @@
+# The person approved the final round: the shape validates, the spec and three
+# tickets publish, and the glossary/ADR changes commit.
+preflight: { tracker: github, ready_label: ready-for-agent }
+session: "Published on approval: spec + 3 tickets. Approve with no comment to publish."
+validate: { title: "Saved cards", slug: saved-cards, tickets: 3 }
+publish: { tracker: github, spec_ref: "#40", tickets: 3, native_edges: true }
+commit:
+  published: true
+  spec_ref: "#40"
+  committed: true
+  next: "stub: run implement-spec"
+fixture:
+  expect: completed
+  reached: [publish, commit]

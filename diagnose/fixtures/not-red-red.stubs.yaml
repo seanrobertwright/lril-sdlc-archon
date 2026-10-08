@@ -1,0 +1,12 @@
+# Expected red: the declared loop passes on the unfixed code (`true` exits 0), so
+# the real prove-loop script refuses and the fix phase never runs.
+start: "0000000000000000000000000000000000000000"
+feedback-loop:
+  built: true
+  command: "true"
+  symptom: ""
+  summary: "stub: a loop that cannot catch the bug"
+fixture:
+  expect: failed
+  fail-node: prove-red
+exec-code: true

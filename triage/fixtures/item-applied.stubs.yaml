@@ -1,0 +1,12 @@
+# One issue triaged with the maintainer and the approved outcome applied.
+preflight: { tracker: github, mode: item, item: "#42", title: "stub: card declined twice" }
+triage: "stub: drafted ready-for-agent brief. Approve with no comment to apply."
+apply:
+  item: "#42"
+  category: bug
+  state: ready-for-agent
+  closed: false
+  summary: "stub"
+fixture:
+  expect: completed
+  reached: [apply]

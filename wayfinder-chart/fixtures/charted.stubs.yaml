@@ -1,0 +1,15 @@
+# The person approved the map: it publishes, research tickets resolve, and the
+# local map commits.
+preflight: { tracker: local }
+session: "stub: approve with no comment to publish the map"
+publish: { has_map: true, map_ref: ".scratch/billing-v2/map.md", tickets: 5, research: 2 }
+research: "stub: 2 research tickets resolved"
+record-research: "Resolved research tickets: 01, 03"
+commit:
+  has_map: true
+  map_ref: ".scratch/billing-v2/map.md"
+  committed: true
+  next: "stub"
+fixture:
+  expect: completed
+  reached: [research, record-research, commit]

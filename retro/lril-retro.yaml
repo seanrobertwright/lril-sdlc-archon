@@ -1,0 +1,60 @@
+name: lril-retro
+description: |
+  Matt Pocock's /retro over a finished Archon run. Reads the run's own primary
+  sources (its condensed JSONL transcript and artifacts) and suggests
+  improvements to the coding agent's environment, not the code, most severe
+  first: navigation pointers, automated checks, coding standards for the
+  reviewer, steering files, tool economy, no-op instructions, and information
+  access. Mechanical mistakes become deterministic checks; judgement calls
+  become coding standards. Read-only: it proposes, you choose.
+
+  Use when: a build or diagnosis just finished, especially one that went
+  sideways: "retro on that run", "what would have prevented this bug?".
+  NOT for: reviewing the code itself (lril-code-review).
+
+provider: claude
+model: large
+mutates_checkout: false
+
+inputs:
+  run:
+    default: ""
+    description: >-
+      The run id (or a prefix) to look back on. When empty, the run's message
+      is used; when that is empty too, the most recent other run.
+
+returns: check
+outcome_field: ready
+
+nodes:
+  - id: locate
+    script: locate
+    runtime: bun
+    with:
+      run: "$INPUTS.run"
+    output_format:
+      type: object
+      properties:
+        run_id: { type: string }
+        workflow: { type: string }
+        log: { type: string }
+        artifacts: { type: string }
+      required: [run_id, workflow, log, artifacts]
+
+  - id: retro
+    command: retro
+    depends_on: [locate]
+    plugins: [mattpocock-skills@claude-plugins-official]
+    skills: [mattpocock-skills:writing-for-agents]
+
+  - id: check
+    script: check-retro
+    runtime: bun
+    depends_on: [retro]
+    output_format:
+      type: object
+      properties:
+        ready: { type: boolean }
+        candidates: { type: integer }
+        report: { type: string }
+      required: [ready, candidates, report]

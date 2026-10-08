@@ -1,0 +1,104 @@
+name: lril-wayfinder-chart
+description: |
+  Matt Pocock's /wayfinder, charting mode. For a loose idea too big and foggy
+  for one session (a greenfield project, a huge feature build), it grills you
+  at an interactive gate to name the destination, then maps the frontier
+  breadth-first. Then it publishes a shared map on your tracker: one
+  wayfinder:map issue (or .scratch/<effort>/map.md) whose child decision
+  tickets are questions, each typed research, prototype, grilling or task,
+  wired with native blocking edges, the rest left as fog. Research tickets are
+  resolved straight away by background agents. It plans and decides; it
+  doesn't build. If the way turns out to be clear already, it says so and
+  hands you to lril-idea-to-tickets instead.
+
+  Use when: the way from here to the destination isn't visible yet: "chart a
+  map for the billing rewrite", "wayfind the v2 migration".
+  NOT for: a well-scoped feature (lril-idea-to-tickets), or working an
+  existing map (lril-wayfinder-step).
+
+provider: claude
+model: large
+interactive: true
+
+inputs:
+  idea:
+    default: ""
+    description: The loose idea. When empty, the run's message is the idea.
+
+returns: commit
+
+nodes:
+  - id: preflight
+    script: preflight
+    runtime: bun
+    output_format:
+      type: object
+      properties:
+        tracker: { type: string, enum: [github, local] }
+      required: [tracker]
+
+  - id: chart
+    depends_on: [preflight]
+    loop_group:
+      interactive: true
+      fresh_context: false
+      max_iterations: 60
+      gate_message: >-
+        Answer the round above (the full text is in the run's artifacts under
+        wayfinder/current-round.md) with `archon workflow approve <run-id>
+        "<answers>"`; "yes" accepts a recommendation. When the status line says
+        the completion condition is met, approve with NO comment to publish the
+        map, or with a comment to revise it.
+      until_bash: 'bun "$ARTIFACTS_DIR/bin/validate-map.ts" >/dev/null 2>&1'
+      nodes:
+        - id: session
+          command: chart
+          plugins: [mattpocock-skills@claude-plugins-official]
+          skills: [mattpocock-skills:grilling, mattpocock-skills:domain-modeling]
+
+  # The map is published by code, then read back; research tickets are listed so
+  # the next node can resolve them in parallel.
+  - id: publish
+    script: publish-map
+    runtime: bun
+    depends_on: [chart]
+    output_format:
+      type: object
+      properties:
+        has_map: { type: boolean }
+        map_ref: { type: string }
+        tickets: { type: integer }
+        research: { type: integer }
+      required: [has_map, map_ref, tickets, research]
+
+  - id: research
+    command: research-tickets
+    depends_on: [publish]
+    when: "$publish.output.research > 0"
+    context: fresh
+    plugins: [mattpocock-skills@claude-plugins-official]
+    skills: [mattpocock-skills:research]
+
+  - id: record-research
+    script: record-research
+    runtime: bun
+    depends_on: [research]
+    with:
+      map_ref: "$publish.output.map_ref"
+
+  - id: commit
+    script: commit
+    runtime: bun
+    depends_on: [publish, record-research]
+    trigger_rule: none_failed_min_one_success
+    with:
+      map_ref: "$publish.output.map_ref"
+      has_map: "$publish.output.has_map"
+    output_format:
+      type: object
+      properties:
+        has_map: { type: boolean }
+        map_ref: { type: string }
+        committed: { type: boolean }
+        next: { type: string }
+      required: [has_map, map_ref, committed, next]

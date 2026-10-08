@@ -1,0 +1,9 @@
+# No fog: the session concluded no map is needed, so nothing is researched and
+# the real commit script points at lril-idea-to-tickets.
+preflight: { tracker: local }
+session: "stub: the way is clear"
+publish: { has_map: false, map_ref: "", tickets: 0, research: 0 }
+fixture:
+  expect: completed
+  reached: [commit]
+exec-code: true

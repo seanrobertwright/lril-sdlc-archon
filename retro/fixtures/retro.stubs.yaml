@@ -1,0 +1,6 @@
+# The run is located, the retro written and certified.
+locate: { run_id: abc123, workflow: lril-implement, log: "/tmp/abc123.jsonl", artifacts: "" }
+retro: "stub: retro written"
+check: { ready: true, candidates: 2, report: "/tmp/retro.md" }
+fixture:
+  expect: completed

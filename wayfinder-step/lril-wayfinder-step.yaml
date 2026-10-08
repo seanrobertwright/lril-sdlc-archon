@@ -1,0 +1,102 @@
+name: lril-wayfinder-step
+description: |
+  Matt Pocock's /wayfinder, working mode: resolve exactly one decision ticket
+  on an existing map. It loads the map at low resolution, takes the ticket you
+  name (or the first one on the frontier: open, unblocked, unclaimed), and
+  claims it before any work. Then it resolves the ticket as its type says.
+  Research goes to a background agent; grilling, prototype and task tickets
+  are worked with you at an interactive gate. It records the answer, closes
+  the ticket, and indexes it in the map's Decisions so far. Newly specifiable
+  fog graduates into fresh tickets, and anything beyond the destination is
+  ruled out of scope. When the map clears, it hands off to
+  lril-idea-to-tickets rather than building.
+
+  Use when: a wayfinder map exists and you want to push the fog back one
+  decision: "next wayfinder ticket on #12", "resolve the auth decision".
+  NOT for: charting a new map (lril-wayfinder-chart).
+
+provider: claude
+model: large
+interactive: true
+
+inputs:
+  map:
+    default: ""
+    description: The map, a wayfinder:map issue number or URL, or a .scratch/<effort>/map.md path. When empty, the run's message.
+  ticket:
+    default: ""
+    description: A specific ticket to resolve (issue number, or the local NN). When empty, the first frontier ticket.
+
+returns: record
+
+nodes:
+  - id: load
+    script: load
+    runtime: bun
+    with:
+      map: "$INPUTS.map"
+      ticket: "$INPUTS.ticket"
+    output_format:
+      type: object
+      properties:
+        tracker: { type: string, enum: [github, local] }
+        map_ref: { type: string }
+        ticket_ref: { type: string }
+        title: { type: string }
+        type: { type: string, enum: [research, prototype, grilling, task, none] }
+      required: [tracker, map_ref, ticket_ref, title, type]
+
+  - id: clear
+    cancel: >-
+      The map has no open tickets left: the way to the destination is clear.
+      Hand off, don't build. Collapse the map's linked decisions into a buildable
+      spec with lril-idea-to-tickets, pointing it at the map.
+    depends_on: [load]
+    when: "$load.output.type == 'none'"
+
+  - id: research
+    command: resolve-research
+    depends_on: [load]
+    when: "$load.output.type == 'research'"
+    context: fresh
+    plugins: [mattpocock-skills@claude-plugins-official]
+    skills: [mattpocock-skills:research]
+
+  - id: session
+    depends_on: [load]
+    when: "$load.output.type == 'grilling' || $load.output.type == 'prototype' || $load.output.type == 'task'"
+    loop_group:
+      interactive: true
+      fresh_context: false
+      max_iterations: 40
+      gate_message: >-
+        Reply with `archon workflow approve <run-id> "<reply>"` (the full text is
+        in the run's artifacts under wayfinder/current-round.md). When the status
+        line says the completion condition is met, approve with NO comment to
+        record the resolution on the map, or with a comment to change it.
+      until_bash: 'bun "$ARTIFACTS_DIR/bin/validate-resolution.ts" >/dev/null 2>&1'
+      nodes:
+        - id: resolve
+          command: resolve
+          plugins: [mattpocock-skills@claude-plugins-official]
+          skills: [mattpocock-skills:grilling, mattpocock-skills:domain-modeling, mattpocock-skills:prototype]
+
+  - id: record
+    script: record
+    runtime: bun
+    depends_on: [load, research, session]
+    trigger_rule: none_failed_min_one_success
+    when: "$load.output.type != 'none'"
+    with:
+      map_ref: "$load.output.map_ref"
+      ticket_ref: "$load.output.ticket_ref"
+    output_format:
+      type: object
+      properties:
+        resolved: { type: string }
+        new_tickets: { type: integer }
+        closed: { type: integer }
+        open_left: { type: integer }
+        committed: { type: boolean }
+        next: { type: string }
+      required: [resolved, new_tickets, closed, open_left, committed, next]

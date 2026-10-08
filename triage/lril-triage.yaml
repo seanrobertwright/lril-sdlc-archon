@@ -1,0 +1,89 @@
+name: lril-triage
+description: |
+  Matt Pocock's /triage as a governed run. With no target it lists what needs
+  your attention: never-triaged issues, needs-triage, and needs-info issues
+  with reporter activity, oldest first. With a target it triages that one
+  issue with you at an interactive gate. It gathers context, checks for an
+  existing implementation and prior rejections in .out-of-scope/, recommends a
+  category and state, verifies the claim, grills if needed (sharpening
+  GLOSSARY.md and ADRs inline), and drafts the outcome. Only after you approve
+  does it apply the outcome to the tracker: labels, an agent brief or triage
+  notes, a close with its reason.
+
+  Use when: bugs and requests are piling up: "what needs my attention?",
+  "triage #42", "what's ready for agents?".
+  NOT for: tickets lril-idea-to-tickets produced (they're agent-ready by
+  construction), or building the fix (lril-implement picks up ready-for-agent).
+
+provider: claude
+model: large
+interactive: true
+
+inputs:
+  target:
+    default: ""
+    description: >-
+      An issue number or URL (GitHub) or issue file path (local) to triage;
+      "ready" to list what's ready for agents; empty to list what needs
+      attention. When empty, the run's message is used.
+
+nodes:
+  - id: preflight
+    script: preflight
+    runtime: bun
+    with:
+      target: "$INPUTS.target"
+    output_format:
+      type: object
+      properties:
+        tracker: { type: string, enum: [github, local] }
+        mode: { type: string, enum: [attention, ready, item] }
+        item: { type: string }
+        title: { type: string }
+      required: [tracker, mode, item, title]
+
+  - id: attention
+    script: attention
+    runtime: bun
+    depends_on: [preflight]
+    when: "$preflight.output.mode != 'item'"
+    with:
+      mode: "$preflight.output.mode"
+
+  - id: session
+    depends_on: [preflight]
+    when: "$preflight.output.mode == 'item'"
+    loop_group:
+      interactive: true
+      fresh_context: false
+      max_iterations: 40
+      gate_message: >-
+        Reply with your direction or answers: `archon workflow approve <run-id>
+        "<reply>"` (the full text is in the run's artifacts under
+        triage/current-round.md). When the status line says the completion
+        condition is met, the drafted outcome is ready: approve with NO comment
+        to apply it to the tracker, or with a comment to change it.
+      until_bash: 'bun "$ARTIFACTS_DIR/bin/validate-outcome.ts" >/dev/null 2>&1'
+      nodes:
+        - id: triage
+          command: triage-session
+          plugins: [mattpocock-skills@claude-plugins-official]
+          skills: [mattpocock-skills:grilling, mattpocock-skills:domain-modeling]
+
+  # The one write to the tracker, performed by code after your final approval,
+  # and read back before it reports.
+  - id: apply
+    script: apply
+    runtime: bun
+    depends_on: [session]
+    with:
+      item: "$preflight.output.item"
+    output_format:
+      type: object
+      properties:
+        item: { type: string }
+        category: { type: string }
+        state: { type: string }
+        closed: { type: boolean }
+        summary: { type: string }
+      required: [item, category, state, closed, summary]

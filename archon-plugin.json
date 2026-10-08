@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "workflow-pack",
+  "name": "lril-sdlc",
+  "description": "LRIL SDLC Archon Workflows: Matt Pocock's skills (grill-with-docs, to-spec, to-tickets, tdd, code-review, triage, diagnosing-bugs, wayfinder, retro) as gated, resumable Archon workflows for GitHub or local-markdown trackers.",
+  "compatibility": { "archon": ">=0.11.1" },
+  "entrypoints": {
+    "setup": "setup/lril-setup.yaml",
+    "idea-to-tickets": "idea-to-tickets/lril-idea-to-tickets.yaml",
+    "implement": "implement/lril-implement.yaml",
+    "implement-spec": "implement-spec/lril-implement-spec.yaml",
+    "code-review": "code-review/lril-code-review.yaml",
+    "triage": "triage/lril-triage.yaml",
+    "diagnose": "diagnose/lril-diagnose.yaml",
+    "architecture": "architecture/lril-architecture.yaml",
+    "retro": "retro/lril-retro.yaml",
+    "wayfinder-chart": "wayfinder-chart/lril-wayfinder-chart.yaml",
+    "wayfinder-step": "wayfinder-step/lril-wayfinder-step.yaml"
+  }
+}

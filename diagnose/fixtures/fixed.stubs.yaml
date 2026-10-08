@@ -1,0 +1,19 @@
+# The loop is built and proven red, the fix lands, and the loop is proven green.
+start: "0000000000000000000000000000000000000000"
+feedback-loop:
+  built: true
+  command: "bun test checkout.double-charge.test.ts"
+  symptom: "charged 2 times"
+  summary: "stub: failing test at the checkout seam"
+prove-red: { runs: 3, seconds: 1.2 }
+fix:
+  fixed: true
+  hypothesis: "the retry wrapper re-submits after a timeout the gateway already honoured"
+  regression_test: "bun test checkout.double-charge.test.ts"
+  no_seam: ""
+  summary: "stub: idempotency key added"
+prove-green: { runs: 3, seconds: 1.1 }
+fixture:
+  expect: completed
+  reached: [outcome]
+exec-code: true

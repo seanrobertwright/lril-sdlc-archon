@@ -1,0 +1,20 @@
+# Expected red: the implementer declines (done, not green). The real gate script
+# must refuse before review spends anything.
+fetch:
+  kind: inline
+  ref: "inline description"
+  number: 0
+  title: "stub"
+  path: ""
+  spec_path: "/tmp/work-spec.md"
+  has_parent_spec: false
+  start_sha: "0000000000000000000000000000000000000000"
+build:
+  done: true
+  green: false
+  summary: "stub: blocked, the ticket contradicts the order model"
+  check_commands: []
+fixture:
+  expect: failed
+  fail-node: gate
+exec-code: true

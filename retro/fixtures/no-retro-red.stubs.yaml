@@ -1,0 +1,7 @@
+# Expected red: the session wrote nothing, so the real check refuses.
+locate: { run_id: abc123, workflow: lril-implement, log: "/tmp/abc123.jsonl", artifacts: "" }
+retro: "stub: forgot to write"
+fixture:
+  expect: failed
+  fail-node: check
+exec-code: true

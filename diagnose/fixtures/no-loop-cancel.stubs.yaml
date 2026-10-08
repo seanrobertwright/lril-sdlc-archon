@@ -1,0 +1,9 @@
+# No red-capable loop: the run cancels with the reason instead of theorising.
+start: "0000000000000000000000000000000000000000"
+feedback-loop:
+  built: false
+  command: ""
+  symptom: ""
+  summary: "stub: only reproduces in production; need a HAR file"
+fixture:
+  expect: cancelled

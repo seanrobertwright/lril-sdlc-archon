@@ -1,0 +1,6 @@
+# Expected red: this checkout has no docs/agents/issue-tracker.md, so the real
+# preflight refuses before the interview starts, naming lril-setup as the fix.
+fixture:
+  expect: failed
+  fail-node: preflight
+exec-code: true

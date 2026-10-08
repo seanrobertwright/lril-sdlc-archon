@@ -1,0 +1,6 @@
+# No target: list what needs attention; the interactive session never starts.
+preflight: { tracker: github, mode: attention, item: "", title: "" }
+attention: "# Needs your attention\n\n## needs-triage (2)"
+fixture:
+  expect: completed
+  reached: [attention]

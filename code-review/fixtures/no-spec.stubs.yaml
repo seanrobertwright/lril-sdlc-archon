@@ -1,0 +1,17 @@
+# No spec was found, so the Spec axis is condition-skipped and the aggregate
+# still runs on the Standards report alone.
+pin:
+  fixed_point: origin/main
+  diff_command: git diff origin/main...HEAD
+  commit_count: 1
+  spec_path: ""
+  spec_source: no spec available
+  standards: []
+standards:
+  hard_violations: 0
+  judgement_calls: 0
+  worst: ""
+fixture:
+  expect: completed
+  reached: [aggregate]
+exec-code: true

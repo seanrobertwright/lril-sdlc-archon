@@ -1,0 +1,13 @@
+{
+  "name": "lril-sdlc-archon-dev",
+  "private": true,
+  "description": "Dev-only tooling for the pack: type-checking and unit tests. Never needed at run time.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,54 @@
+name: lril-architecture
+description: |
+  Matt Pocock's /improve-codebase-architecture survey as a governed run. Scopes
+  to the codebase's recent hot spots (or the direction you name), walks it for
+  friction, and proposes deepening opportunities: refactors that turn shallow
+  modules into deep ones, for testability and AI-navigability. They are
+  presented as a self-contained visual HTML report with a before/after diagram
+  per candidate and a top recommendation. Read-only. Picking a candidate
+  generates an idea: take it into lril-idea-to-tickets to grill and plan it.
+
+  Use when: you have a spare moment to keep the codebase good for agents, or a
+  diagnosis found no correct seam to lock a bug down: "survey the
+  architecture", "where should we deepen the billing module?".
+  NOT for: a single module's interface design mid-feature (that happens inside
+  lril-idea-to-tickets), or rescuing a ball of mud in one go.
+
+provider: claude
+model: large
+mutates_checkout: false
+
+inputs:
+  focus:
+    default: ""
+    description: >-
+      A direction: a module, subsystem or pain point. When empty, the run's
+      message is used; when that is empty too, recent commit hot spots decide.
+
+returns: check
+outcome_field: ready
+
+nodes:
+  - id: survey
+    command: survey
+    plugins: [mattpocock-skills@claude-plugins-official]
+    skills: [mattpocock-skills:codebase-design, mattpocock-skills:domain-modeling]
+    output_format:
+      type: object
+      properties:
+        candidates: { type: integer }
+        top: { type: string }
+      required: [candidates, top]
+
+  - id: check
+    script: check-report
+    runtime: bun
+    depends_on: [survey]
+    output_format:
+      type: object
+      properties:
+        ready: { type: boolean }
+        report: { type: string }
+        candidates: { type: integer }
+        next: { type: string }
+      required: [ready, report, candidates, next]

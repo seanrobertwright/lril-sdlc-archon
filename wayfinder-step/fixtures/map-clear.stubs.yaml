@@ -1,0 +1,4 @@
+# The map is clear: the run cancels with the hand-off to lril-idea-to-tickets.
+load: { tracker: github, map_ref: "#12", ticket_ref: "", title: "", type: none }
+fixture:
+  expect: cancelled

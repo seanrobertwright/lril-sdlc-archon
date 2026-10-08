@@ -1,0 +1,8 @@
+# Expected red: the session ended without a valid outcome.json, so the real
+# apply script refuses and the tracker is never touched.
+preflight: { tracker: local, mode: item, item: ".scratch/inbox/issues/01-x.md", title: "stub" }
+triage: "stub: still discussing"
+fixture:
+  expect: failed
+  fail-node: apply
+exec-code: true

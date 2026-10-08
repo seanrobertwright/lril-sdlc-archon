@@ -1,0 +1,9 @@
+# Expected red: the session ends without a valid spec.md and tickets.json (here
+# they were never written), so the real validate script refuses and nothing is
+# published.
+preflight: { tracker: local, ready_label: ready-for-agent }
+session: "stub: the interview ended early"
+fixture:
+  expect: failed
+  fail-node: validate
+exec-code: true

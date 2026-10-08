@@ -1,0 +1,94 @@
+name: lril-setup
+description: |
+  Matt Pocock's /setup-matt-pocock-skills, done deterministically. Run it once
+  per repo before the other workflows. It checks the mattpocock-skills Claude
+  plugin is installed at v1.3 or later, picks the issue tracker (GitHub when the
+  remote is GitHub, otherwise local markdown under .scratch/), and writes
+  docs/agents/issue-tracker.md, triage-labels.md and domain.md from Matt's own
+  seed templates. It adds the `## Agent skills` block to CLAUDE.md or
+  AGENTS.md, creates the triage and wayfinder labels on GitHub, and commits.
+  Existing docs/agents files are kept unless you pass overwrite=true.
+
+  Use when: first using this pack (or Matt's engineering skills) in a repo, or
+  switching trackers: "set up lril in this repo". Run it on your main branch
+  (`--no-worktree`), or merge its branch.
+  NOT for: GitLab, Jira or Linear. This pack automates GitHub and local
+  markdown; run /setup-matt-pocock-skills interactively for others.
+
+inputs:
+  tracker:
+    default: "auto"
+    description: auto, github, or local. auto picks GitHub when origin is on github.com.
+  agents_file:
+    default: "auto"
+    description: >-
+      auto, CLAUDE.md, or AGENTS.md. auto edits whichever exists (CLAUDE.md
+      first) and creates CLAUDE.md when neither does.
+  overwrite:
+    default: "false"
+    description: Replace existing docs/agents files with fresh templates, true or false.
+
+returns: commit
+
+nodes:
+  - id: explore
+    script: explore
+    runtime: bun
+    output_format:
+      type: object
+      properties:
+        github_repo: { type: string }
+        plugin_version: { type: string }
+        plugin_ok: { type: boolean }
+        plugin_note: { type: string }
+      required: [github_repo, plugin_version, plugin_ok, plugin_note]
+
+  - id: plugin-missing
+    cancel: >-
+      The mattpocock-skills Claude plugin is missing or older than v1.3, and every
+      AI node in this pack loads its skills. Install or update it with
+      `claude plugin install mattpocock-skills@claude-plugins-official` (or
+      `claude plugin update ...`), then re-run lril-setup.
+    depends_on: [explore]
+    when: "$explore.output.plugin_ok == false"
+
+  - id: configure
+    script: configure
+    runtime: bun
+    depends_on: [explore]
+    when: "$explore.output.plugin_ok == true"
+    with:
+      tracker: "$INPUTS.tracker"
+      agents_file: "$INPUTS.agents_file"
+      overwrite: "$INPUTS.overwrite"
+      github_repo: "$explore.output.github_repo"
+    output_format:
+      type: object
+      properties:
+        tracker: { type: string, enum: [github, local] }
+        agents_file: { type: string }
+        written: { type: array, items: { type: string } }
+        kept: { type: array, items: { type: string } }
+      required: [tracker, agents_file, written, kept]
+
+  - id: labels
+    script: ensure-labels
+    runtime: bun
+    depends_on: [configure]
+    when: "$configure.output.tracker == 'github'"
+
+  - id: commit
+    script: commit
+    runtime: bun
+    depends_on: [configure, labels]
+    trigger_rule: none_failed_min_one_success
+    with:
+      agents_file: "$configure.output.agents_file"
+      tracker: "$configure.output.tracker"
+    output_format:
+      type: object
+      properties:
+        tracker: { type: string }
+        committed: { type: boolean }
+        summary: { type: string }
+      required: [tracker, committed, summary]

@@ -1,0 +1,9 @@
+# The survey writes its report and the check certifies it.
+survey: { candidates: 3, top: "Collapse the Order intake pipeline" }
+check:
+  ready: true
+  report: "/tmp/architecture-review.html"
+  candidates: 3
+  next: "stub"
+fixture:
+  expect: completed

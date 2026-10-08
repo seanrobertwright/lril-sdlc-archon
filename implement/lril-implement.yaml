@@ -1,0 +1,182 @@
+name: lril-implement
+description: |
+  Matt Pocock's /implement as a governed run: build one ticket (or a small
+  described change) test-first with /tdd at the seams the spec agreed, re-run
+  the project checks independently, review the diff on two axes with
+  /code-review, address the findings, and commit to the current branch.
+  Optionally opens a PR whose body follows /pr. Marks a local ticket done.
+
+  Use when: one ticket is ready to build. That means a ticket from
+  lril-idea-to-tickets, a ready-for-agent issue from lril-triage, or a small
+  change you can describe: "implement #42", "build
+  .scratch/checkout/issues/03-saved-cards.md".
+  NOT for: a whole spec's ticket graph (lril-implement-spec), deciding what to
+  build (lril-idea-to-tickets), or hard bugs (lril-diagnose).
+
+provider: claude
+model: large
+
+inputs:
+  ticket:
+    default: ""
+    description: >-
+      The work: a GitHub issue number or URL, a local ticket file path, or a
+      plain description. When empty, the run's message is the work.
+  pr:
+    default: "false"
+    description: Open (or update) a pull request when done, true or false.
+
+returns: outcome
+outcome_field: green
+
+nodes:
+  - id: fetch
+    script: fetch-work
+    runtime: bun
+    with:
+      ticket: "$INPUTS.ticket"
+    output_format:
+      type: object
+      properties:
+        kind: { type: string, enum: [github, local, inline] }
+        ref: { type: string }
+        number: { type: integer }
+        title: { type: string }
+        path: { type: string }
+        spec_path: { type: string }
+        has_parent_spec: { type: boolean }
+        start_sha: { type: string }
+      required: [kind, ref, number, title, path, spec_path, has_parent_spec, start_sha]
+
+  # One implementer session, iterating until it declares the work done. Each pass
+  # continues the same conversation, so the agent remembers what it tried.
+  - id: implement
+    depends_on: [fetch]
+    loop_group:
+      max_iterations: 5
+      until_bash: 'test $build.output.done = true'
+      nodes:
+        - id: build
+          command: implement
+          plugins: [mattpocock-skills@claude-plugins-official]
+          skills: [mattpocock-skills:tdd, mattpocock-skills:codebase-design]
+          output_format:
+            type: object
+            properties:
+              done: { type: boolean }
+              green: { type: boolean }
+              summary: { type: string }
+              check_commands: { type: array, items: { type: string } }
+            required: [done, green, summary, check_commands]
+
+  - id: gate
+    script: gate
+    runtime: bun
+    depends_on: [implement]
+    with:
+      verdict: { from: "$implement.output" }
+      start_sha: "$fetch.output.start_sha"
+      label: implement
+    output_format:
+      type: object
+      properties:
+        passed: { type: boolean }
+        commits: { type: integer }
+        checks: { type: integer }
+      required: [passed, commits, checks]
+
+  - id: review
+    include: lril-code-review
+    depends_on: [gate]
+    with:
+      base: "$fetch.output.start_sha"
+      spec: "$fetch.output.spec_path"
+
+  # Refactoring belongs to the review stage, not the red-green loop (/tdd). One
+  # fresh implementer addresses every finding, fixing or declining each with a reason.
+  - id: address
+    command: address-review
+    depends_on: [review]
+    when: "$review.output.has_findings == true"
+    with:
+      review_summary: "$review.output.summary"
+    context: fresh
+    plugins: [mattpocock-skills@claude-plugins-official]
+    skills: [mattpocock-skills:tdd, mattpocock-skills:codebase-design]
+    output_format:
+      type: object
+      properties:
+        done: { type: boolean }
+        green: { type: boolean }
+        summary: { type: string }
+        check_commands: { type: array, items: { type: string } }
+      required: [done, green, summary, check_commands]
+
+  - id: recheck
+    script: gate
+    runtime: bun
+    depends_on: [address]
+    with:
+      verdict: { from: "$address.output" }
+      start_sha: "$fetch.output.start_sha"
+      label: after-review
+    output_format:
+      type: object
+      properties:
+        passed: { type: boolean }
+        commits: { type: integer }
+        checks: { type: integer }
+      required: [passed, commits, checks]
+
+  - id: resolve
+    script: resolve-local
+    runtime: bun
+    depends_on: [review, recheck]
+    trigger_rule: none_failed_min_one_success
+    when: "$fetch.output.kind == 'local'"
+    with:
+      path: "$fetch.output.path"
+
+  - id: pr-body
+    command: pr-body
+    depends_on: [review, recheck, resolve]
+    trigger_rule: none_failed_min_one_success
+    when: "$INPUTS.pr == 'true'"
+    context: fresh
+    plugins: [mattpocock-skills@claude-plugins-official]
+    skills: [mattpocock-skills:pr]
+    output_format:
+      type: object
+      properties:
+        title: { type: string }
+      required: [title]
+
+  - id: publish-pr
+    script: publish-pr
+    runtime: bun
+    depends_on: [pr-body]
+    with:
+      title: "$pr-body.output.title"
+      number: "$fetch.output.number"
+    output_format:
+      type: object
+      properties:
+        pr_url: { type: string }
+      required: [pr_url]
+
+  - id: outcome
+    script: outcome
+    runtime: bun
+    depends_on: [gate, review, recheck, resolve, publish-pr]
+    trigger_rule: none_failed_min_one_success
+    with:
+      title: "$fetch.output.title"
+      ref: "$fetch.output.ref"
+      review: "$review.output.summary"
+      pr_url: { from: "$publish-pr.output.pr_url", if_skipped: null }
+    output_format:
+      type: object
+      properties:
+        green: { type: boolean }
+        summary: { type: string }
+      required: [green, summary]

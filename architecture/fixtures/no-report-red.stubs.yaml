@@ -1,0 +1,7 @@
+# Expected red: the survey claims candidates but wrote no report, so the real
+# check script refuses.
+survey: { candidates: 3, top: "stub" }
+fixture:
+  expect: failed
+  fail-node: check
+exec-code: true

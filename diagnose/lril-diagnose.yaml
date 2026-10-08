@@ -1,0 +1,118 @@
+name: lril-diagnose
+description: |
+  Matt Pocock's /diagnosing-bugs as a governed run, for the hard ones: a bug
+  that resists a first glance, an intermittent flake, a regression between two
+  known-good states. Phase 1 builds a tight feedback loop, one command that
+  goes red on THIS bug. A script then proves that command really does go red,
+  repeatedly, before anyone is allowed to theorise. Then the run minimises the
+  repro, ranks falsifiable hypotheses, instruments, fixes with a regression
+  test at a correct seam, and cleans up. The same script then proves the loop
+  green, the regression test passing, and no [DEBUG-] instrumentation left.
+
+  Use when: something is broken, throwing, failing or slow and the cause isn't
+  obvious: "diagnose why checkout double-charges", "this test flakes".
+  NOT for: a known one-line fix (lril-implement), or feature work.
+
+provider: claude
+model: large
+
+inputs:
+  bug:
+    default: ""
+    description: The symptom, as precisely as you can state it. When empty, the run's message is the bug.
+
+returns: outcome
+outcome_field: fixed
+
+nodes:
+  - id: start
+    bash: git rev-parse HEAD
+
+  # Phase 1 only: build the loop and stop. No hypotheses, no fix.
+  - id: feedback-loop
+    command: build-loop
+    depends_on: [start]
+    plugins: [mattpocock-skills@claude-plugins-official]
+    skills: [mattpocock-skills:diagnosing-bugs]
+    output_format:
+      type: object
+      properties:
+        built: { type: boolean }
+        command: { type: string }
+        symptom: { type: string }
+        summary: { type: string }
+      required: [built, command, symptom, summary]
+
+  - id: no-loop
+    cancel: >-
+      No red-capable feedback loop could be built, so the run stops rather than
+      guess at causes. See feedback-loop.md in the run's artifacts for what was
+      tried and what access or artifact would unblock it.
+    depends_on: [feedback-loop]
+    when: "$feedback-loop.output.built == false"
+
+  # "No red-capable command, no Phase 2." Proven by code, not by the claim.
+  - id: prove-red
+    script: prove-red
+    runtime: bun
+    depends_on: [feedback-loop]
+    when: "$feedback-loop.output.built == true"
+    with:
+      command: "$feedback-loop.output.command"
+      symptom: "$feedback-loop.output.symptom"
+    output_format:
+      type: object
+      properties:
+        runs: { type: integer }
+        seconds: { type: number }
+      required: [runs, seconds]
+
+  # Phases 2-6 continue the Phase 1 session, which already knows the loop.
+  - id: fix
+    command: fix
+    depends_on: [prove-red]
+    context: { resume: feedback-loop }
+    plugins: [mattpocock-skills@claude-plugins-official]
+    skills: [mattpocock-skills:diagnosing-bugs, mattpocock-skills:tdd, mattpocock-skills:codebase-design]
+    output_format:
+      type: object
+      properties:
+        fixed: { type: boolean }
+        hypothesis: { type: string }
+        regression_test: { type: string }
+        no_seam: { type: string }
+        summary: { type: string }
+      required: [fixed, hypothesis, regression_test, no_seam, summary]
+
+  - id: prove-green
+    script: prove-green
+    runtime: bun
+    depends_on: [fix]
+    with:
+      command: "$feedback-loop.output.command"
+      fixed: "$fix.output.fixed"
+      regression_test: "$fix.output.regression_test"
+      no_seam: "$fix.output.no_seam"
+      start: "$start.output"
+    output_format:
+      type: object
+      properties:
+        runs: { type: integer }
+        seconds: { type: number }
+      required: [runs, seconds]
+
+  - id: outcome
+    script: outcome
+    runtime: bun
+    depends_on: [prove-green]
+    with:
+      hypothesis: "$fix.output.hypothesis"
+      no_seam: "$fix.output.no_seam"
+      summary: "$fix.output.summary"
+    output_format:
+      type: object
+      properties:
+        fixed: { type: boolean }
+        summary: { type: string }
+        next: { type: string }
+      required: [fixed, summary, next]

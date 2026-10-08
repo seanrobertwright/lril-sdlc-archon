@@ -1,0 +1,112 @@
+name: lril-idea-to-tickets
+description: |
+  Matt Pocock's main flow, steps 1 to 3, in one unbroken session:
+  /grill-with-docs sharpens the idea by interview, building GLOSSARY.md and ADRs
+  inline; /to-spec agrees the test seams and synthesises a spec; /to-tickets
+  splits it into tracer-bullet tickets with blocking edges. You answer each
+  round at an interactive gate. Once you approve, the spec and tickets are
+  published to your tracker (GitHub issues with native sub-issues and
+  blocked-by edges, or .scratch/ files), and the glossary and ADRs are
+  committed.
+
+  Use when: you have an idea, feature, or change to build and want to align on
+  it before any code: "grill me on saved cards", "turn this into tickets".
+  NOT for: a huge, foggy effort too big for one session (lril-wayfinder-chart),
+  raw incoming issues (lril-triage), or building (lril-implement-spec).
+
+provider: claude
+model: large
+interactive: true
+
+inputs:
+  idea:
+    default: ""
+    description: The idea to shape. When empty, the run's message is the idea.
+
+returns: commit
+outcome_field: published
+
+nodes:
+  # Refuse before the interview if the tracker isn't configured, and stage the
+  # deterministic validator the session and the loop's completion check both run.
+  - id: preflight
+    script: preflight
+    runtime: bun
+    output_format:
+      type: object
+      properties:
+        tracker: { type: string, enum: [github, local] }
+        ready_label: { type: string }
+      required: [tracker, ready_label]
+
+  # Grill, spec, tickets: one session, so the spec and tickets build on the
+  # interview verbatim rather than on a summary of it. Each iteration is one
+  # round you answer at the gate. The loop completes only when tickets.json
+  # exists AND passes the validator; approving that gate with no comment publishes.
+  - id: shape
+    depends_on: [preflight]
+    loop_group:
+      interactive: true
+      fresh_context: false
+      max_iterations: 80
+      gate_message: >-
+        Answer the round above (the full text is in the run's artifacts under
+        shape/current-round.md). Reply with `archon workflow approve <run-id>
+        "<your answers>"`; "yes" accepts a recommendation. When the status line
+        says the completion condition is met, approve with NO comment to publish
+        the spec and tickets, or with a comment to revise them.
+      until_bash: 'bun "$ARTIFACTS_DIR/bin/validate-shape.ts" >/dev/null 2>&1'
+      nodes:
+        - id: session
+          command: shape
+          plugins: [mattpocock-skills@claude-plugins-official]
+          skills:
+            - mattpocock-skills:grilling
+            - mattpocock-skills:domain-modeling
+            - mattpocock-skills:codebase-design
+            - mattpocock-skills:prototype
+            - mattpocock-skills:research
+
+  - id: validate
+    script: validate
+    runtime: bun
+    depends_on: [shape]
+    output_format:
+      type: object
+      properties:
+        title: { type: string }
+        slug: { type: string }
+        tickets: { type: integer }
+      required: [title, slug, tickets]
+
+  # The one public write, performed by code and read back: the spec, then every
+  # ticket blockers-first so each edge can name a real identifier.
+  - id: publish
+    script: publish
+    runtime: bun
+    depends_on: [validate]
+    output_format:
+      type: object
+      properties:
+        tracker: { type: string }
+        spec_ref: { type: string }
+        tickets: { type: integer }
+        native_edges: { type: boolean }
+      required: [tracker, spec_ref, tickets, native_edges]
+
+  - id: commit
+    script: commit-docs
+    runtime: bun
+    depends_on: [publish]
+    with:
+      spec_ref: "$publish.output.spec_ref"
+      slug: "$validate.output.slug"
+      tracker: "$publish.output.tracker"
+    output_format:
+      type: object
+      properties:
+        published: { type: boolean }
+        spec_ref: { type: string }
+        committed: { type: boolean }
+        next: { type: string }
+      required: [published, spec_ref, committed, next]

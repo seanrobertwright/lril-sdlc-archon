@@ -1,0 +1,41 @@
+# The whole graph builds green, review finds issues, one fix pass runs, and the
+# integration PR is written and published. The build group itself is stubbed:
+# its per-ticket gate is exercised by the real ticket-gate script on a run.
+load:
+  tracker: github
+  spec_ref: "#40"
+  spec_number: 40
+  title: "stub: saved cards"
+  spec_path: "/tmp/spec.md"
+  start_sha: "0000000000000000000000000000000000000000"
+  total: 3
+  open: 3
+explore: "stub: notes written"
+next: { all_done: true, key: "", ref: "", title: "", head_sha: "0000000" }
+review__pin:
+  fixed_point: "0000000"
+  diff_command: "git diff 0000000...HEAD"
+  commit_count: 6
+  spec_path: "/tmp/spec.md"
+  spec_source: "file"
+  standards: []
+review__standards: { hard_violations: 0, judgement_calls: 1, worst: "stub" }
+review__spec-axis: { missing: 0, scope_creep: 0, wrong: 0, worst: "" }
+review__aggregate:
+  has_findings: true
+  blocking: false
+  standards_findings: 1
+  spec_findings: 0
+  summary: "stub: one judgement call"
+fix:
+  done: true
+  green: true
+  summary: "stub: fixed"
+  check_commands: ["npm test"]
+recheck: '{"passed":true,"commits":7,"checks":1}'
+pr-body: { title: "stub: saved cards" }
+publish-pr: { pr_url: "https://github.com/acme/shop/pull/9" }
+fixture:
+  expect: completed
+  reached: [fix, recheck, publish-pr, outcome]
+exec-code: true

@@ -1,0 +1,13 @@
+# A grilling ticket is claimed, resolved with the person, and recorded.
+load: { tracker: github, map_ref: "#12", ticket_ref: "#15", title: "Which ledger owns refunds?", type: grilling }
+resolve: "stub: approve with no comment to record it"
+record:
+  resolved: "#15 Which ledger owns refunds?"
+  new_tickets: 1
+  closed: 0
+  open_left: 4
+  committed: false
+  next: "stub"
+fixture:
+  expect: completed
+  reached: [record]

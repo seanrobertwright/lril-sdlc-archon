@@ -1,0 +1,21 @@
+# Both axes ran. Proves the parallel layer joins into the aggregate and that the
+# real aggregate script composes the side-by-side report.
+pin:
+  fixed_point: origin/main
+  diff_command: git diff origin/main...HEAD
+  commit_count: 2
+  spec_path: spec.md
+  spec_source: issue #42
+  standards: [CONTRIBUTING.md]
+standards:
+  hard_violations: 1
+  judgement_calls: 2
+  worst: "stub: breaks the documented error-handling rule"
+spec-axis:
+  missing: 0
+  scope_creep: 1
+  wrong: 0
+  worst: "stub: adds an unrequested flag"
+fixture:
+  expect: completed
+exec-code: true

@@ -1,0 +1,8 @@
+# Expected red: the session wrote no resolution, so the real record script
+# refuses and the map is untouched.
+load: { tracker: local, map_ref: ".scratch/x/map.md", ticket_ref: "01", title: "stub", type: grilling }
+resolve: "stub: still discussing"
+fixture:
+  expect: failed
+  fail-node: record
+exec-code: true

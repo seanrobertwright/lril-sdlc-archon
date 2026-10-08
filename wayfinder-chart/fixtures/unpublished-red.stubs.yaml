@@ -1,0 +1,8 @@
+# Expected red: the session ended with neither map.json nor no-map.md, so the
+# real publish script refuses and nothing reaches the tracker.
+preflight: { tracker: local }
+session: "stub: still charting"
+fixture:
+  expect: failed
+  fail-node: publish
+exec-code: true

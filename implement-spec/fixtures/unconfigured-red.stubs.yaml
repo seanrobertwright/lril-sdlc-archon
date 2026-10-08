@@ -1,0 +1,8 @@
+# Expected red: this checkout has no docs/agents/issue-tracker.md, so the real
+# load script refuses before anything spends, naming lril-setup as the fix.
+fixture:
+  expect: failed
+  fail-node: load
+  inputs:
+    spec: "#40"
+exec-code: true

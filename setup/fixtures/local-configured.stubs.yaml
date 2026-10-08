@@ -1,0 +1,11 @@
+# No GitHub remote: the local tracker is chosen and no labels are created.
+explore: { github_repo: "", plugin_version: "1.3.0", plugin_ok: true, plugin_note: "" }
+configure:
+  tracker: local
+  agents_file: AGENTS.md
+  written: [docs/agents/issue-tracker.md, AGENTS.md]
+  kept: [docs/agents/triage-labels.md, docs/agents/domain.md]
+commit: { tracker: local, committed: true, summary: "stub" }
+fixture:
+  expect: completed
+  reached: [commit]
