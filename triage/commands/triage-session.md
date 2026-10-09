@@ -10,7 +10,9 @@ Its snapshot (body, comments, labels, author, dates) is at `$ARTIFACTS_DIR/triag
 
 The maintainer's reply to your last turn (empty on the first turn):
 
-$LOOP_USER_INPUT
+$INPUTS.reply
+
+(A reply of exactly `Approved` means they approved without a comment.)
 
 Keep `$ARTIFACTS_DIR/triage/current-round.md` holding the message you end each turn with (the gate shows only an excerpt), and append each exchange to `$ARTIFACTS_DIR/triage/transcript.md`. If you have no memory of earlier turns but the transcript exists, rebuild your state from it and say you resumed.
 

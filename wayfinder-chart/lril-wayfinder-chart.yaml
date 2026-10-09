@@ -53,6 +53,10 @@ nodes:
       nodes:
         - id: session
           command: chart
+          # The gate reply reaches a command body only through a binding: Archon
+          # substitutes $LOOP_USER_INPUT into body YAML, not into command files.
+          with:
+            reply: "$LOOP_USER_INPUT"
           plugins: [mattpocock-skills@claude-plugins-official]
           skills: [mattpocock-skills:grilling, mattpocock-skills:domain-modeling]
 

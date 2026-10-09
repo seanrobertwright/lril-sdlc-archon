@@ -12,7 +12,9 @@ $load.output.ticket_ref: **$load.output.title** (type: `$load.output.type`)
 
 The person's reply to your last turn (empty on the first turn):
 
-$LOOP_USER_INPUT
+$INPUTS.reply
+
+(A reply of exactly `Approved` means they approved without a comment.)
 
 Keep `$ARTIFACTS_DIR/wayfinder/current-round.md` holding the message you end each turn with, and append each exchange verbatim to `$ARTIFACTS_DIR/wayfinder/transcript.md`. If you have no memory of earlier turns but the transcript exists, rebuild your state from it and say you resumed.
 

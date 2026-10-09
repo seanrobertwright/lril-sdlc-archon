@@ -14,7 +14,9 @@ $ARGUMENTS
 
 The person's reply to your last round (empty on the first turn):
 
-$LOOP_USER_INPUT
+$INPUTS.reply
+
+(A reply of exactly `Approved` means they approved without a comment.)
 
 Keep `$ARTIFACTS_DIR/wayfinder/current-round.md` holding the round you end each turn with (the gate shows only an excerpt), and append each exchange verbatim to `$ARTIFACTS_DIR/wayfinder/transcript.md`. If you have no memory of earlier rounds but the transcript exists, rebuild your state from it and say you resumed.
 

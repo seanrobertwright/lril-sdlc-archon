@@ -4,12 +4,14 @@
  * ticket graph through the real gates → triage an issue → chart and step a map.
  * The AI nodes are replaced by the files they would write.
  */
-import { beforeAll, describe, expect, test } from 'bun:test';
+import { beforeAll, describe, expect, setDefaultTimeout, test } from 'bun:test';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const PACK = resolve(import.meta.dir, '..', '..');
+// Each test spawns a dozen bun and git subprocesses; on Windows that outlasts the 5s default.
+setDefaultTimeout(60_000);
 let repo = '';
 
 function git(...args: string[]): string {

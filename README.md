@@ -158,6 +158,7 @@ archon workflow run seanrobertwright/lril-sdlc:wayfinder-step --input map=#12
 
 - Every AI node declares `plugins: [mattpocock-skills@claude-plugins-official]`. Archon v0.11.1 loads all installed Claude plugins and warns that `plugins` is an unknown key. From the next Archon release, nodes load only the plugins they name, and this declaration is what keeps the skills available.
 - Archon warns that plugin-qualified skills (`mattpocock-skills:tdd`) aren't on disk. That's expected: Claude resolves plugin skills itself.
+- Gate replies reach a session through `with: { reply: "$LOOP_USER_INPUT" }`, and the command reads `$INPUTS.reply`. Archon v0.11.1 substitutes `$LOOP_USER_INPUT` into a `loop_group` body node's YAML fields, but not into the command file the node loads, so reading it there directly always gives an empty reply.
 - Interactive sessions use `loop_group` with `interactive: true`, which Archon marks deprecated in favour of a future gate composition. It's the supported mechanism today.
 
 ## Developing the pack

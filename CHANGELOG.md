@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.1 (2026-10-08)
+
+- Fix: interactive gate replies now reach the session in `triage`, `idea-to-tickets`, `wayfinder-chart` and `wayfinder-step`. Archon substitutes `$LOOP_USER_INPUT` into a `loop_group` body node's YAML but not into the command file it loads, so every reply arrived empty, and only bare approvals worked. Each session now binds the reply with `with: { reply: "$LOOP_USER_INPUT" }` and reads `$INPUTS.reply`. A test guards against reading `$LOOP_USER_INPUT` in a command file again.
+
 ## v0.1.0 (2026-10-08)
 
 First release: eleven workflows over Matt Pocock's skills v1.3.

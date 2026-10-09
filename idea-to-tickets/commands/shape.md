@@ -14,7 +14,9 @@ $ARGUMENTS
 
 The person's reply to your last round (empty on the first turn):
 
-$LOOP_USER_INPUT
+$INPUTS.reply
+
+(A reply of exactly `Approved` means they approved without a comment.)
 
 If you have no memory of earlier rounds but `$ARTIFACTS_DIR/shape/transcript.md` exists, the session was restarted. Rebuild your state from the transcript and any files under `$ARTIFACTS_DIR/shape/`, tell the person you resumed, and carry on from the open frontier.
 

@@ -138,3 +138,37 @@ describe('local ticket fields', () => {
     expect(field(setField('# 01: X\n\nType: research\n', 'Type', 'grilling'), 'Type')).toBe('grilling');
   });
 });
+
+describe('interactive replies', () => {
+  // Archon substitutes $LOOP_USER_INPUT into a loop_group body node's YAML, but not
+  // into the command file it loads, so a reply read there is always empty. Commands
+  // read the reply as $INPUTS.reply, bound with `with: { reply: "$LOOP_USER_INPUT" }`.
+  const { readdirSync, readFileSync, existsSync } = require('node:fs') as typeof import('node:fs');
+  const root = join(import.meta.dir, '..', '..');
+  const folders = readdirSync(root).filter(name => existsSync(join(root, name, 'commands')));
+
+  test('no command file reads $LOOP_USER_INPUT directly', () => {
+    const offenders = folders.flatMap(folder =>
+      readdirSync(join(root, folder, 'commands'))
+        .filter(file => readFileSync(join(root, folder, 'commands', file), 'utf8').includes('$LOOP_USER_INPUT'))
+        .map(file => `${folder}/commands/${file}`),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  test('every command that reads $INPUTS.reply is bound to the gate reply', () => {
+    for (const folder of folders) {
+      const yaml = readdirSync(join(root, folder)).find(name => name.endsWith('.yaml'));
+      if (yaml === undefined) continue;
+      const source = readFileSync(join(root, folder, yaml), 'utf8');
+      for (const file of readdirSync(join(root, folder, 'commands'))) {
+        if (!readFileSync(join(root, folder, 'commands', file), 'utf8').includes('$INPUTS.reply')) continue;
+        const name = file.replace(/\.md$/, '');
+        const at = source.indexOf(`command: ${name}\n`);
+        expect(at).toBeGreaterThan(-1);
+        const node = source.slice(at, source.indexOf('\n        - id:', at) === -1 ? undefined : source.indexOf('\n        - id:', at));
+        expect(node).toContain('reply: "$LOOP_USER_INPUT"');
+      }
+    }
+  });
+});
