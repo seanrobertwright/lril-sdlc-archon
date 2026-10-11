@@ -86,7 +86,7 @@ nodes:
           command: implement-ticket
           depends_on: [next]
           when: "$next.output.all_done == false"
-          plugins: [mattpocock-skills@claude-plugins-official]
+          plugins: [mattpocock-skills@mattpocock]
           skills: [mattpocock-skills:tdd, mattpocock-skills:codebase-design]
           output_format:
             type: object
@@ -128,7 +128,7 @@ nodes:
     context: fresh
     with:
       review_summary: "$review.output.summary"
-    plugins: [mattpocock-skills@claude-plugins-official]
+    plugins: [mattpocock-skills@mattpocock]
     skills: [mattpocock-skills:tdd, mattpocock-skills:codebase-design]
     output_format:
       type: object
@@ -154,7 +154,7 @@ nodes:
     trigger_rule: none_failed_min_one_success
     when: "$INPUTS.pr == 'true'"
     context: fresh
-    plugins: [mattpocock-skills@claude-plugins-official]
+    plugins: [mattpocock-skills@mattpocock]
     skills: [mattpocock-skills:pr]
     output_format:
       type: object

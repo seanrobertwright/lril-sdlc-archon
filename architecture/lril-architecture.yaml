@@ -31,7 +31,7 @@ outcome_field: ready
 nodes:
   - id: survey
     command: survey
-    plugins: [mattpocock-skills@claude-plugins-official]
+    plugins: [mattpocock-skills@mattpocock]
     skills: [mattpocock-skills:codebase-design, mattpocock-skills:domain-modeling]
     output_format:
       type: object

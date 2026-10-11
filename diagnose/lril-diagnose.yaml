@@ -32,7 +32,7 @@ nodes:
   - id: feedback-loop
     command: build-loop
     depends_on: [start]
-    plugins: [mattpocock-skills@claude-plugins-official]
+    plugins: [mattpocock-skills@mattpocock]
     skills: [mattpocock-skills:diagnosing-bugs]
     output_format:
       type: object
@@ -72,7 +72,7 @@ nodes:
     command: fix
     depends_on: [prove-red]
     context: { resume: feedback-loop }
-    plugins: [mattpocock-skills@claude-plugins-official]
+    plugins: [mattpocock-skills@mattpocock]
     skills: [mattpocock-skills:diagnosing-bugs, mattpocock-skills:tdd, mattpocock-skills:codebase-design]
     output_format:
       type: object

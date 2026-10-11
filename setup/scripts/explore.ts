@@ -5,7 +5,7 @@
 import { emit, note, run } from '../../.shared/io.ts';
 import { exec } from '../../.shared/proc.ts';
 
-const PLUGIN = 'mattpocock-skills@claude-plugins-official';
+const PLUGIN = 'mattpocock-skills@mattpocock';
 const MINIMUM = [1, 3, 0];
 
 function atLeast(version: string): boolean {
