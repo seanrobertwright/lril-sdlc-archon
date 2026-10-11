@@ -58,7 +58,7 @@ nodes:
     depends_on: [pin]
     context: fresh
     allowed_tools: [Read, Grep, Glob, Bash]
-    plugins: [mattpocock-skills@claude-plugins-official]
+    plugins: [mattpocock-skills@mattpocock]
     skills: [mattpocock-skills:codebase-design]
     output_format:
       type: object

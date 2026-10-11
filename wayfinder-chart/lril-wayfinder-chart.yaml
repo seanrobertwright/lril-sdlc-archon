@@ -57,7 +57,7 @@ nodes:
           # substitutes $LOOP_USER_INPUT into body YAML, not into command files.
           with:
             reply: "$LOOP_USER_INPUT"
-          plugins: [mattpocock-skills@claude-plugins-official]
+          plugins: [mattpocock-skills@mattpocock]
           skills: [mattpocock-skills:grilling, mattpocock-skills:domain-modeling]
 
   # The map is published by code, then read back; research tickets are listed so
@@ -80,7 +80,7 @@ nodes:
     depends_on: [publish]
     when: "$publish.output.research > 0"
     context: fresh
-    plugins: [mattpocock-skills@claude-plugins-official]
+    plugins: [mattpocock-skills@mattpocock]
     skills: [mattpocock-skills:research]
 
   - id: record-research

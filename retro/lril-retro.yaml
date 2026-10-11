@@ -44,7 +44,7 @@ nodes:
   - id: retro
     command: retro
     depends_on: [locate]
-    plugins: [mattpocock-skills@claude-plugins-official]
+    plugins: [mattpocock-skills@mattpocock]
     skills: [mattpocock-skills:writing-for-agents]
 
   - id: check

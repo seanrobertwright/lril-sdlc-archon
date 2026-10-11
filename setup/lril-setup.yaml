@@ -46,9 +46,10 @@ nodes:
   - id: plugin-missing
     cancel: >-
       The mattpocock-skills Claude plugin is missing or older than v1.3, and every
-      AI node in this pack loads its skills. Install or update it with
-      `claude plugin install mattpocock-skills@claude-plugins-official` (or
-      `claude plugin update ...`), then re-run lril-setup.
+      AI node in this pack loads its skills. Install or update it from Matt's
+      marketplace with `claude plugin marketplace add mattpocock/skills` and
+      `claude plugin install mattpocock-skills@mattpocock` (or
+      `claude plugin update mattpocock-skills@mattpocock`), then re-run lril-setup.
     depends_on: [explore]
     when: "$explore.output.plugin_ok == false"
 

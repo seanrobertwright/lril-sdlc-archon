@@ -71,7 +71,7 @@ nodes:
           # substitutes $LOOP_USER_INPUT into body YAML, not into command files.
           with:
             reply: "$LOOP_USER_INPUT"
-          plugins: [mattpocock-skills@claude-plugins-official]
+          plugins: [mattpocock-skills@mattpocock]
           skills: [mattpocock-skills:grilling, mattpocock-skills:domain-modeling]
 
   # The one write to the tracker, performed by code after your final approval,

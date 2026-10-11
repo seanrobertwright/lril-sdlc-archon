@@ -58,7 +58,7 @@ nodes:
       nodes:
         - id: build
           command: implement
-          plugins: [mattpocock-skills@claude-plugins-official]
+          plugins: [mattpocock-skills@mattpocock]
           skills: [mattpocock-skills:tdd, mattpocock-skills:codebase-design]
           output_format:
             type: object
@@ -101,7 +101,7 @@ nodes:
     with:
       review_summary: "$review.output.summary"
     context: fresh
-    plugins: [mattpocock-skills@claude-plugins-official]
+    plugins: [mattpocock-skills@mattpocock]
     skills: [mattpocock-skills:tdd, mattpocock-skills:codebase-design]
     output_format:
       type: object
@@ -143,7 +143,7 @@ nodes:
     trigger_rule: none_failed_min_one_success
     when: "$INPUTS.pr == 'true'"
     context: fresh
-    plugins: [mattpocock-skills@claude-plugins-official]
+    plugins: [mattpocock-skills@mattpocock]
     skills: [mattpocock-skills:pr]
     output_format:
       type: object

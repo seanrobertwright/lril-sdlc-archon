@@ -76,9 +76,10 @@ The pack never hardcodes a toolchain. Implementers discover the project's own ty
 ## Prerequisites
 
 - **Archon** v0.11.1 or later, signed in to Claude (`archon doctor`).
-- **Claude Code** with the **`mattpocock-skills`** plugin at **v1.3 or later**:
+- **Claude Code** with the **`mattpocock-skills`** plugin at **v1.3 or later**, installed from Matt's own marketplace. The `claude-plugins-official` listing is older than v1.3, and the pack names the plugin by its id, `mattpocock-skills@mattpocock`:
   ```bash
-  claude plugin install mattpocock-skills@claude-plugins-official   # or: claude plugin update ...
+  claude plugin marketplace add mattpocock/skills
+  claude plugin install mattpocock-skills@mattpocock   # or: claude plugin update mattpocock-skills@mattpocock
   ```
 - **git** and **[bun](https://bun.sh)** on `PATH`. The deterministic nodes are TypeScript on Bun, with no npm dependencies.
 - For the GitHub tracker: **`gh`**, authenticated, in a clone with a GitHub `origin`.
@@ -156,7 +157,7 @@ archon workflow run seanrobertwright/lril-sdlc:wayfinder-step --input map=#12
 
 ## Archon version notes
 
-- Every AI node declares `plugins: [mattpocock-skills@claude-plugins-official]`. Archon v0.11.1 loads all installed Claude plugins and warns that `plugins` is an unknown key. From the next Archon release, nodes load only the plugins they name, and this declaration is what keeps the skills available.
+- Every AI node declares `plugins: [mattpocock-skills@mattpocock]`. Archon v0.11.1 loads all installed Claude plugins and warns that `plugins` is an unknown key. From the next Archon release, nodes load only the plugins they name, and this declaration is what keeps the skills available.
 - Archon warns that plugin-qualified skills (`mattpocock-skills:tdd`) aren't on disk. That's expected: Claude resolves plugin skills itself.
 - Gate replies reach a session through `with: { reply: "$LOOP_USER_INPUT" }`, and the command reads `$INPUTS.reply`. Archon v0.11.1 substitutes `$LOOP_USER_INPUT` into a `loop_group` body node's YAML fields, but not into the command file the node loads, so reading it there directly always gives an empty reply ([coleam00/Archon#3954](https://github.com/coleam00/Archon/issues/3954)). Drop the binding once that is fixed.
 - Interactive sessions use `loop_group` with `interactive: true`, which Archon marks deprecated in favour of a future gate composition. It's the supported mechanism today.

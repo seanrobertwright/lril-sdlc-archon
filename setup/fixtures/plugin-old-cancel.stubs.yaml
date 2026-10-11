@@ -4,6 +4,6 @@ explore:
   github_repo: acme/shop
   plugin_version: "1.2.3"
   plugin_ok: false
-  plugin_note: "mattpocock-skills@claude-plugins-official is v1.2.3; this pack needs v1.3.0 or later."
+  plugin_note: "mattpocock-skills@mattpocock is v1.2.3; this pack needs v1.3.0 or later."
 fixture:
   expect: cancelled

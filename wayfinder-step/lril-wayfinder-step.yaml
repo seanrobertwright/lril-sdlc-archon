@@ -59,7 +59,7 @@ nodes:
     depends_on: [load]
     when: "$load.output.type == 'research'"
     context: fresh
-    plugins: [mattpocock-skills@claude-plugins-official]
+    plugins: [mattpocock-skills@mattpocock]
     skills: [mattpocock-skills:research]
 
   - id: session
@@ -82,7 +82,7 @@ nodes:
           # substitutes $LOOP_USER_INPUT into body YAML, not into command files.
           with:
             reply: "$LOOP_USER_INPUT"
-          plugins: [mattpocock-skills@claude-plugins-official]
+          plugins: [mattpocock-skills@mattpocock]
           skills: [mattpocock-skills:grilling, mattpocock-skills:domain-modeling, mattpocock-skills:prototype]
 
   - id: record
