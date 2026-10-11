@@ -100,7 +100,7 @@ nodes:
         - id: ticket-gate
           script: ticket-gate
           runtime: bun
-          # Above the per-command limits in .shared/checks.ts and .shared/loop.ts; Archon's default is 120 s.
+          # Above the gate budget (CHECK_BUDGET_MS) and the loop bound (.shared/loop.ts); Archon's default is 120 s.
           timeout: 3600000
           depends_on: [next, impl]
           with:
@@ -144,7 +144,7 @@ nodes:
   - id: recheck
     script: gate
     runtime: bun
-    # Above the per-command limits in .shared/checks.ts and .shared/loop.ts; Archon's default is 120 s.
+    # Above the gate budget (CHECK_BUDGET_MS) and the loop bound (.shared/loop.ts); Archon's default is 120 s.
     timeout: 3600000
     depends_on: [fix]
     with:

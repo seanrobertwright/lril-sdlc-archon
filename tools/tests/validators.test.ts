@@ -7,7 +7,8 @@ import { draftProblems, frontier, topoOrder } from '../../.shared/tickets.ts';
 import { DISCLAIMER, outcomeProblems } from '../../.shared/triage.ts';
 import { mapProblems, replaceSection, appendToSection, renderMap } from '../../.shared/wayfinder.ts';
 import { field, readTicket, setField } from '../../.shared/local.ts';
-import { runChecks } from '../../.shared/checks.ts';
+import { CHECK_BUDGET_MS, runChecks } from '../../.shared/checks.ts';
+import { RUNS, TIMEOUT_MS as LOOP_TIMEOUT_MS } from '../../.shared/loop.ts';
 
 const ticket = (key: string, blocked_by: string[] = []) => ({
   key,
@@ -175,13 +176,19 @@ describe('interactive replies', () => {
 });
 
 describe('check timeouts', () => {
-  // A script node without `timeout:` gets Archon's 120 s default, which kills a gate
-  // long before the per-command limits inside the scripts apply. Every node that
-  // re-runs project checks or a feedback loop declares a budget above those limits.
+  // A script node without `timeout:` gets Archon's 120 s default, which stops a gate
+  // with no verdict. Every node that re-runs project checks declares more than the
+  // gate's total budget, and every feedback-loop node more than its worst case: RUNS
+  // runs plus the regression test, each at the loop's per-run limit.
   const { readdirSync, readFileSync, statSync } = require('node:fs') as typeof import('node:fs');
   const root = join(import.meta.dir, '..', '..');
-  const CHECK_SCRIPTS = new Set(['gate', 'ticket-gate', 'prove-red', 'prove-green']);
-  const MINIMUM_MS = 60 * 60 * 1000;
+  const MINIMUM_MS: Readonly<Record<string, number>> = {
+    gate: CHECK_BUDGET_MS,
+    'ticket-gate': CHECK_BUDGET_MS,
+    'prove-red': RUNS * LOOP_TIMEOUT_MS,
+    'prove-green': (RUNS + 1) * LOOP_TIMEOUT_MS,
+  };
+  const CHECK_SCRIPTS = new Set(Object.keys(MINIMUM_MS));
   type Node = { id?: string; script?: string; timeout?: number; loop_group?: { nodes?: Node[] } };
   const walk = (nodes: Node[] = []): Node[] => nodes.flatMap(node => [node, ...walk(node.loop_group?.nodes)]);
   const checkNodes = readdirSync(root)
@@ -191,15 +198,17 @@ describe('check timeouts', () => {
       const yaml = readdirSync(dir).find(name => /^lril-.*\.yaml$/.test(name));
       if (yaml === undefined) return [];
       const workflow = Bun.YAML.parse(readFileSync(join(dir, yaml), 'utf8')) as { nodes?: Node[] };
-      return walk(workflow.nodes).filter(node => CHECK_SCRIPTS.has(node.script ?? '')).map(node => ({ where: `${yaml} ${node.id}`, timeout: node.timeout }));
+      return walk(workflow.nodes)
+        .filter(node => CHECK_SCRIPTS.has(node.script ?? ''))
+        .map(node => ({ where: `${yaml} ${node.id}`, timeout: node.timeout, minimum: MINIMUM_MS[node.script ?? ''] ?? 0 }));
     });
 
   test('the pack has check-running nodes to guard', () => {
     expect(checkNodes.length).toBeGreaterThan(0);
   });
 
-  test('every check-running node declares a timeout of at least an hour', () => {
-    expect(checkNodes.filter(node => typeof node.timeout !== 'number' || node.timeout < MINIMUM_MS).map(node => node.where)).toEqual([]);
+  test('every check-running node declares a timeout above what its script can spend', () => {
+    expect(checkNodes.filter(node => typeof node.timeout !== 'number' || node.timeout <= node.minimum).map(node => node.where)).toEqual([]);
   });
 });
 
@@ -212,5 +221,17 @@ describe('runChecks', () => {
     expect(results.map(result => result.code)).toEqual([0, 0]);
     expect(results[1]?.tail).toContain('## `true` exited 0');
     expect(results[1]?.tail).toContain(`## \`${reader}\` is running`);
+  });
+
+  test('a gate whose budget runs out stops the running command and records the rest as not run', () => {
+    const artifacts = mkdtempSync(join(tmpdir(), 'lril-checks-'));
+    const started = Date.now();
+    const results = runChecks(['true', 'sleep 5', 'true'], artifacts, 'gate', 1500);
+    expect(Date.now() - started).toBeLessThan(4500);
+    expect(results.map(result => [result.code === 0, result.notRun === true])).toEqual([[true, false], [false, false], [false, true]]);
+    expect(results[1]?.tail).toContain('Stopped at the end of the gate');
+    const record = require('node:fs').readFileSync(join(artifacts, 'checks', 'gate.md'), 'utf8') as string;
+    expect(record).toContain('## `sleep 5` exited');
+    expect(record).toContain('## `true` was not run');
   });
 });
