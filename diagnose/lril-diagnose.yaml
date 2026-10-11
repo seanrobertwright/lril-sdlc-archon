@@ -55,6 +55,8 @@ nodes:
   - id: prove-red
     script: prove-red
     runtime: bun
+    # Above the per-command limits in .shared/checks.ts and .shared/loop.ts; Archon's default is 120 s.
+    timeout: 3600000
     depends_on: [feedback-loop]
     when: "$feedback-loop.output.built == true"
     with:
@@ -87,6 +89,8 @@ nodes:
   - id: prove-green
     script: prove-green
     runtime: bun
+    # Above the per-command limits in .shared/checks.ts and .shared/loop.ts; Archon's default is 120 s.
+    timeout: 3600000
     depends_on: [fix]
     with:
       command: "$feedback-loop.output.command"

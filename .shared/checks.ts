@@ -21,13 +21,8 @@ function tail(text: string, lines = 40): string {
   return text.trimEnd().split('\n').slice(-lines).join('\n');
 }
 
-/** Run every command; write a markdown record under `checks/<label>.md`. */
-export function runChecks(commands: readonly string[], artifacts: string, label: string): CheckResult[] {
-  const results = commands.map(command => {
-    const result = shell(command, TIMEOUT_MS);
-    return { command, code: result.code, tail: tail(`${result.stdout}\n${result.stderr}`) };
-  });
-  const record = [
+function record(label: string, results: readonly CheckResult[], running?: string): string {
+  return [
     `# Checks: ${label}`,
     '',
     ...results.flatMap(result => [
@@ -38,8 +33,28 @@ export function runChecks(commands: readonly string[], artifacts: string, label:
       '```',
       '',
     ]),
+    ...(running === undefined ? [] : [`## \`${running}\` is running`, '']),
   ].join('\n');
-  write(join(artifacts, 'checks', `${label}.md`), commands.length === 0 ? `# Checks: ${label}\n\nNo check commands were declared.\n` : record);
+}
+
+/**
+ * Run every command; write a markdown record under `checks/<label>.md`. The record is
+ * rewritten before and after each command, so a gate stopped part-way still shows
+ * which commands finished and which one was running.
+ */
+export function runChecks(commands: readonly string[], artifacts: string, label: string): CheckResult[] {
+  const path = join(artifacts, 'checks', `${label}.md`);
+  if (commands.length === 0) {
+    write(path, `# Checks: ${label}\n\nNo check commands were declared.\n`);
+    return [];
+  }
+  const results: CheckResult[] = [];
+  for (const command of commands) {
+    write(path, record(label, results, command));
+    const result = shell(command, TIMEOUT_MS);
+    results.push({ command, code: result.code, tail: tail(`${result.stdout}\n${result.stderr}`) });
+  }
+  write(path, record(label, results));
   return results;
 }
 

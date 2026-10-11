@@ -7,6 +7,7 @@ import { draftProblems, frontier, topoOrder } from '../../.shared/tickets.ts';
 import { DISCLAIMER, outcomeProblems } from '../../.shared/triage.ts';
 import { mapProblems, replaceSection, appendToSection, renderMap } from '../../.shared/wayfinder.ts';
 import { field, readTicket, setField } from '../../.shared/local.ts';
+import { runChecks } from '../../.shared/checks.ts';
 
 const ticket = (key: string, blocked_by: string[] = []) => ({
   key,
@@ -170,5 +171,46 @@ describe('interactive replies', () => {
         expect(node).toContain('reply: "$LOOP_USER_INPUT"');
       }
     }
+  });
+});
+
+describe('check timeouts', () => {
+  // A script node without `timeout:` gets Archon's 120 s default, which kills a gate
+  // long before the per-command limits inside the scripts apply. Every node that
+  // re-runs project checks or a feedback loop declares a budget above those limits.
+  const { readdirSync, readFileSync, statSync } = require('node:fs') as typeof import('node:fs');
+  const root = join(import.meta.dir, '..', '..');
+  const CHECK_SCRIPTS = new Set(['gate', 'ticket-gate', 'prove-red', 'prove-green']);
+  const MINIMUM_MS = 60 * 60 * 1000;
+  type Node = { id?: string; script?: string; timeout?: number; loop_group?: { nodes?: Node[] } };
+  const walk = (nodes: Node[] = []): Node[] => nodes.flatMap(node => [node, ...walk(node.loop_group?.nodes)]);
+  const checkNodes = readdirSync(root)
+    .filter(folder => !folder.startsWith('.') && statSync(join(root, folder)).isDirectory())
+    .flatMap(folder => {
+      const dir = join(root, folder);
+      const yaml = readdirSync(dir).find(name => /^lril-.*\.yaml$/.test(name));
+      if (yaml === undefined) return [];
+      const workflow = Bun.YAML.parse(readFileSync(join(dir, yaml), 'utf8')) as { nodes?: Node[] };
+      return walk(workflow.nodes).filter(node => CHECK_SCRIPTS.has(node.script ?? '')).map(node => ({ where: `${yaml} ${node.id}`, timeout: node.timeout }));
+    });
+
+  test('the pack has check-running nodes to guard', () => {
+    expect(checkNodes.length).toBeGreaterThan(0);
+  });
+
+  test('every check-running node declares a timeout of at least an hour', () => {
+    expect(checkNodes.filter(node => typeof node.timeout !== 'number' || node.timeout < MINIMUM_MS).map(node => node.where)).toEqual([]);
+  });
+});
+
+describe('runChecks', () => {
+  test('the record names finished commands and the running one while a gate is still going', () => {
+    const artifacts = mkdtempSync(join(tmpdir(), 'lril-checks-'));
+    const record = join(artifacts, 'checks', 'gate.md').replace(/\\/g, '/');
+    const reader = `cat '${record}'`;
+    const results = runChecks(['true', reader], artifacts, 'gate');
+    expect(results.map(result => result.code)).toEqual([0, 0]);
+    expect(results[1]?.tail).toContain('## `true` exited 0');
+    expect(results[1]?.tail).toContain(`## \`${reader}\` is running`);
   });
 });
