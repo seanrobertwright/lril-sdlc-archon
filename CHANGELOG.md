@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Fix: the pack names the skills plugin as `mattpocock-skills@mattpocock`, from Matt's own marketplace (`mattpocock/skills`), instead of `mattpocock-skills@claude-plugins-official`. The official listing is v1.2.3, below the v1.3 the pack needs and without the `pr` skill `implement` and `implement-spec` load, so `setup` could never pass with it. The id changes in every AI node's `plugins:`, the `setup` version gate and its cancel message, and the README install steps, which now add the marketplace first.
+- Fix: the pack names the skills plugin as `mattpocock-skills@mattpocock`, from Matt's own marketplace (`mattpocock/skills`), instead of `mattpocock-skills@claude-plugins-official`. The official listing is v1.2.3, below the v1.3 the pack needs and without the `pr` skill that `implement`, `implement-spec`, `idea-to-tickets` and `wayfinder-step` load, so `setup` could never pass with it. The id changes in every AI node's `plugins:`, the `setup` version gate and its cancel message, and the README install steps, which now add the marketplace first.
 
 ## v0.1.1 (2026-10-08)
 
