@@ -16,7 +16,7 @@ The person's reply to your last round (empty on the first turn):
 
 $INPUTS.reply
 
-(A reply of exactly `Approved` means they approved without a comment.)
+A reply of exactly `Approved` means the person approved without a comment. After a round of questions it accepts every recommended answer. After a turn that presented the final spec and tickets, it publishes them as shown, so change nothing on that turn (a changed draft is shown again instead) and end it with one line saying it goes ahead. The reply is empty only on the first turn: an empty reply after that was lost on the way, so say so and repeat your last turn. Never take silence as agreement.
 
 If you have no memory of earlier rounds but `$ARTIFACTS_DIR/shape/transcript.md` exists, the session was restarted. Rebuild your state from the transcript and any files under `$ARTIFACTS_DIR/shape/`, tell the person you resumed, and carry on from the open frontier.
 
@@ -135,7 +135,7 @@ Iterate until the person approves the breakdown. Only then write `$ARTIFACTS_DIR
 
 Ticket text uses the glossary's vocabulary and avoids file paths and code snippets (the same prototype exception applies).
 
-Writing `tickets.json` ends the loop, so write it only after the person approves. Then run the validator, `bun "$ARTIFACTS_DIR/bin/validate-shape.ts"`, and fix whatever it reports in `spec.md` or `tickets.json` until it prints that the shape is publishable. End the turn with what will be published (the tracker, the spec title, every ticket with its blockers) and say: **approve with no comment to publish, or comment to revise.** If the person comments instead, revise both files, re-run the validator, and present them again.
+Write `tickets.json` only after the person approves the breakdown. The workflow publishes only when the person approves the final spec and tickets with no comment and both files are unchanged since the turn that showed them. Then run the validator, `bun "$ARTIFACTS_DIR/bin/validate-shape.ts"`, and fix whatever it reports in `spec.md` or `tickets.json` until it prints that the shape is publishable. End the turn with what will be published (the tracker, the spec title, every ticket with its blockers) and say: **approve with no comment to publish, or comment to revise.** If the person comments instead, revise both files, re-run the validator, and present them again.
 
 ## Never
 

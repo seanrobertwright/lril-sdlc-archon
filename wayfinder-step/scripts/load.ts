@@ -7,14 +7,22 @@ import { artifactsDir, emit, refuse, trimmed } from '../../.shared/io.ts';
 import { write } from '../../.shared/local.ts';
 import { stageValidator } from '../../.shared/stage.ts';
 import { readTrackerConfig } from '../../.shared/tracker.ts';
-import { claim, mapBody, mapFrontier, mapTickets, resolveMap, ticketBody } from '../../.shared/wayfinder.ts';
+import { claim, mapBody, mapFrontier, mapTickets, resolveMap, ticketBody, type MapRef } from '../../.shared/wayfinder.ts';
 
 try {
   const artifacts = artifactsDir();
   const tracker = readTrackerConfig().kind;
-  const mapInput = trimmed(process.env.INPUTS_MAP) || trimmed(process.env.ARGUMENTS);
+  const mapNamed = trimmed(process.env.INPUTS_MAP);
+  const mapInput = mapNamed || trimmed(process.env.ARGUMENTS);
   if (mapInput === '') throw new Error('No map given: pass --input map=<map issue or .scratch/<effort>/map.md>.');
-  const map = resolveMap(tracker, mapInput);
+  let map: MapRef;
+  try {
+    map = resolveMap(tracker, mapInput);
+  } catch (error) {
+    if (mapNamed !== '') throw error;
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`${reason} With no --input map, the run's message is read as the map reference; pass --input map=<map issue or .scratch/<effort>/map.md>.`);
+  }
   const tickets = mapTickets(map);
   const dir = join(artifacts, 'wayfinder');
   write(join(dir, 'map.md'), mapBody(map));

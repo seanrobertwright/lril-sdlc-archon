@@ -37,7 +37,7 @@ flowchart LR
 | `implement` | `/implement` (`tdd`, `codebase-design`, `code-review`, `pr`) | AFK | One ticket built test-first, gated, reviewed on two axes, committed (optional PR) |
 | `implement-spec` | `/implement-spec` (`tdd`, `codebase-design`, `code-review`, `pr`) | AFK | A whole spec on one integration branch, every ticket gated, one review, one PR |
 | `code-review` | `code-review` | AFK, read-only | `code-review.md`: Standards and Spec, side by side |
-| `triage` | `/triage` (`grilling`, `domain-modeling`) | Interactive | Labels, an agent brief or triage notes, `.out-of-scope/` records |
+| `triage` | `/triage` (`grilling`, `domain-modeling`) | Interactive | Labels, an agent brief or triage notes, `.out-of-scope/` records; glossary and ADR edits committed |
 | `diagnose` | `diagnosing-bugs` (`tdd`, `codebase-design`) | AFK | A proven red→green feedback loop, a regression test, the root cause in the commit |
 | `architecture` | `/improve-codebase-architecture` (`codebase-design`, `domain-modeling`) | AFK, read-only | A visual HTML report of deepening opportunities |
 | `retro` | `/retro` (`writing-for-agents`) | AFK, read-only | `retro.md`: environment improvements, most severe first |
@@ -68,6 +68,7 @@ Matt's skills say what "done" means. The pack checks it with code wherever it ca
 | Red-capable loop | `diagnose` | the feedback-loop command **fails 3/3 times on the unfixed code, with the user's symptom** in the output. No red loop, no hypotheses. |
 | Green loop | `diagnose` | the same command passes 3/3, the regression test passes (or the missing seam is documented), and no `[DEBUG-…]` lines are left in the diff |
 | Triage outcome | `triage` | exactly one category and one state; the AI disclaimer; an agent brief, triage notes, or a close shaped as `/triage` requires; `.out-of-scope/` only for a rejected enhancement |
+| Approved as shown | `idea-to-tickets`, `triage`, `wayfinder-chart`, `wayfinder-step` | the draft a session hands on (spec and tickets, outcome, map, resolution) is unchanged since a gate showed it, and you approved that gate with no comment. A session can't publish on its own say-so, or on a reply that never arrived. |
 | Report complete | `architecture`, `retro` | the report exists and renders every candidate |
 | Public writes | everywhere | issues, labels, comments, sub-issues, blocked-by edges and PRs are written by a script and **read back** |
 
@@ -115,7 +116,7 @@ Interactive workflows pause at a gate after every round. Read the round (the gat
 archon workflow approve <run-id> "Q1 yes. Q2: only signed-in Customers. Q3 yes"
 ```
 
-"yes" accepts the recommended answer. When the status line says **the completion condition is met**, the draft is final. **Approve with no comment** to publish it, or with a comment to revise it. `archon workflow get <run-id> --json` shows where a run stands. The web console (`archon serve`) has the same gate controls.
+"yes" accepts the recommended answer. When a round presents the final draft, **approve with no comment** to publish it exactly as shown, or with a comment to revise it. The gate's status line still reads "No completion condition met" at that point: the run completes on your bare approval. `archon workflow get <run-id> --json` shows where a run stands. The web console (`archon serve`) has the same gate controls.
 
 ### 3. Build it
 
@@ -160,6 +161,7 @@ archon workflow run seanrobertwright/lril-sdlc:wayfinder-step --input map=#12
 - Every AI node declares `plugins: [mattpocock-skills@mattpocock]`. Archon v0.11.1 loads all installed Claude plugins and warns that `plugins` is an unknown key. From the next Archon release, nodes load only the plugins they name, and this declaration is what keeps the skills available.
 - Archon warns that plugin-qualified skills (`mattpocock-skills:tdd`) aren't on disk. That's expected: Claude resolves plugin skills itself.
 - Gate replies reach a session through `with: { reply: "$LOOP_USER_INPUT" }`, and the command reads `$INPUTS.reply`. Archon v0.11.1 substitutes `$LOOP_USER_INPUT` into a `loop_group` body node's YAML fields, but not into the command file the node loads, so reading it there directly always gives an empty reply ([coleam00/Archon#3954](https://github.com/coleam00/Archon/issues/3954)). Drop the binding once that is fixed.
+- An interactive `loop_group` in Archon v0.11.1 pauses after its first iteration even when `until_bash` passes. On every later iteration, a passing `until_bash` ends the loop at once, with no gate. So each session's `until_bash` runs its validator with `--gate`. That passes only when the reply that opened the iteration is a bare approve (Archon records it as `Approved`) and the draft is unchanged since the last gate showed it.
 - Interactive sessions use `loop_group` with `interactive: true`, which Archon marks deprecated in favour of a future gate composition. It's the supported mechanism today.
 
 ## Developing the pack

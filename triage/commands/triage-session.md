@@ -12,7 +12,7 @@ The maintainer's reply to your last turn (empty on the first turn):
 
 $INPUTS.reply
 
-(A reply of exactly `Approved` means they approved without a comment.)
+A reply of exactly `Approved` means the maintainer approved without a comment. After a round of questions it accepts every recommended answer. After a turn that presented the drafted outcome, it applies it as shown, so change nothing on that turn (a changed draft is shown again instead) and end it with one line saying it goes ahead. The reply is empty only on the first turn: an empty reply after that was lost on the way, so say so and repeat your last turn. Never take silence as agreement.
 
 Keep `$ARTIFACTS_DIR/triage/current-round.md` holding the message you end each turn with (the gate shows only an excerpt), and append each exchange to `$ARTIFACTS_DIR/triage/transcript.md`. If you have no memory of earlier turns but the transcript exists, rebuild your state from it and say you resumed.
 
@@ -28,7 +28,7 @@ Two **category** roles: `bug` (something is broken) and `enhancement` (new featu
 2. **Recommend.** End your first turn with your category and state recommendation and your reasoning, a brief summary of the code relevant to the request (including whether it's already implemented), and a question asking for direction. Wait for it.
 3. **Verify the claim** before any grilling. For a bug, reproduce it from the reporter's steps. Report what happened: confirmed (with the code path), failed, or insufficient detail. Insufficient detail is a strong `needs-info` signal. A confirmed reproduction makes a much stronger agent brief.
 4. **Grill, if needed.** If the request needs fleshing out, call the Skill tool for `grilling` and for `domain-modeling`, and grill it into shape one round at a time: numbered questions, each with your recommended answer, worded so "yes" accepts it. Sharpen domain terms and update `GLOSSARY.md` and ADRs inline as decisions land.
-5. **Draft the outcome** once the maintainer has given direction (a quick override like "move it to ready-for-agent" is direction; trust it and skip grilling, but ask whether they want an agent brief written). Write `$ARTIFACTS_DIR/triage/outcome.json`, run `bun "$ARTIFACTS_DIR/bin/validate-outcome.ts"`, fix anything it reports, then end the turn by stating exactly what will happen (the labels set, the comment posted in full, whether the issue closes, any `.out-of-scope/` file written) and say: **approve with no comment to apply this, or comment to change it.** Writing a valid outcome ends the loop, so write it only after the maintainer has decided.
+5. **Draft the outcome** once the maintainer has given direction (a quick override like "move it to ready-for-agent" is direction; trust it and skip grilling, but ask whether they want an agent brief written). Write `$ARTIFACTS_DIR/triage/outcome.json`, run `bun "$ARTIFACTS_DIR/bin/validate-outcome.ts"`, fix anything it reports, then end the turn by stating exactly what will happen (the labels set, the comment posted in full, whether the issue closes, any `.out-of-scope/` file written) and say: **approve with no comment to apply this, or comment to change it.** The workflow applies the outcome only when the maintainer approves it with no comment and the file is unchanged since the turn that showed it. Still, write it only after the maintainer has decided, and show it in full.
 
 ## The outcome file
 

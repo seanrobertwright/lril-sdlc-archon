@@ -16,7 +16,7 @@ The person's reply to your last round (empty on the first turn):
 
 $INPUTS.reply
 
-(A reply of exactly `Approved` means they approved without a comment.)
+A reply of exactly `Approved` means the person approved without a comment. After a round of questions it accepts every recommended answer. After a turn that presented the final map (or the no-map conclusion), it publishes it as shown, so change nothing on that turn (a changed draft is shown again instead) and end it with one line saying it goes ahead. The reply is empty only on the first turn: an empty reply after that was lost on the way, so say so and repeat your last turn. Never take silence as agreement.
 
 Keep `$ARTIFACTS_DIR/wayfinder/current-round.md` holding the round you end each turn with (the gate shows only an excerpt), and append each exchange verbatim to `$ARTIFACTS_DIR/wayfinder/transcript.md`. If you have no memory of earlier rounds but the transcript exists, rebuild your state from it and say you resumed.
 
@@ -30,7 +30,7 @@ Grill until the destination is pinned down: the spec, decision, or change this m
 
 Grill again, **breadth-first** this time: fan out across the whole space rather than deep on any one thread, surfacing the open decisions and the first steps you can take now.
 
-**If this surfaces no fog** (the way is already clear and the whole journey fits in one session), you don't need a map. Say so, recommend shaping it with `lril-idea-to-tickets` instead, and on the person's yes write `$ARTIFACTS_DIR/wayfinder/no-map.md` with the destination and that recommendation. That ends the loop.
+**If this surfaces no fog** (the way is already clear and the whole journey fits in one session), you don't need a map. Say so, recommend shaping it with `lril-idea-to-tickets` instead, and on the person's yes write `$ARTIFACTS_DIR/wayfinder/no-map.md` with the destination and that recommendation. Show it and say: **approve with no comment to end here, or comment to keep charting.** The loop ends on that approval.
 
 ## 3. Draft the map
 
@@ -60,7 +60,7 @@ Present the draft: the destination, the notes (domain, the skills every session 
 }
 ```
 
-Then run `bun "$ARTIFACTS_DIR/bin/validate-map.ts"` and fix whatever it reports. End the turn with what will be published and say: **approve with no comment to publish the map, or comment to revise it.**
+Then run `bun "$ARTIFACTS_DIR/bin/validate-map.ts"` and fix whatever it reports. End the turn with what will be published and say: **approve with no comment to publish the map, or comment to revise it.** The workflow publishes only when the person approves with no comment and `map.json` is unchanged since the turn that showed it.
 
 Charting is one session's work: resolve nothing here by hand. Research tickets are resolved by background agents right after publishing; every other ticket waits for `lril-wayfinder-step`.
 

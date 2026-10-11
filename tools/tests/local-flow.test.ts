@@ -20,8 +20,8 @@ function git(...args: string[]): string {
   return result.stdout.toString().trim();
 }
 
-function script(path: string, env: Record<string, string>, artifacts: string): { code: number; out: string; err: string } {
-  const result = Bun.spawnSync(['bun', join(PACK, path)], {
+function script(path: string, env: Record<string, string>, artifacts: string, args: string[] = []): { code: number; out: string; err: string } {
+  const result = Bun.spawnSync(['bun', join(PACK, path), ...args], {
     cwd: repo,
     stdout: 'pipe',
     stderr: 'pipe',
@@ -62,6 +62,16 @@ describe('lril-setup', () => {
     expect(readFileSync(join(repo, 'CLAUDE.md'), 'utf8')).toContain('## Agent skills');
     const committed = ok('setup/scripts/commit.ts', { INPUTS_AGENTS_FILE: 'CLAUDE.md', INPUTS_TRACKER: 'local' }, artifacts);
     expect(committed.committed).toBe(true);
+  });
+
+  test('names the rename for a glossary still called CONTEXT.md', () => {
+    writeFileSync(join(repo, 'CONTEXT.md'), '# Context\n');
+    git('add', 'CONTEXT.md');
+    git('commit', '-q', '-m', 'legacy glossary');
+    const committed = ok('setup/scripts/commit.ts', { INPUTS_AGENTS_FILE: 'CLAUDE.md', INPUTS_TRACKER: 'local' }, freshArtifacts());
+    expect(committed.summary).toContain('git mv CONTEXT.md GLOSSARY.md');
+    git('rm', '-q', 'CONTEXT.md');
+    git('commit', '-q', '-m', 'drop legacy glossary');
   });
 
   test('re-running keeps existing files and updates the block in place', () => {
@@ -181,12 +191,21 @@ describe('lril-triage apply (local)', () => {
         out_of_scope: null,
       }),
     );
+    // The loop's check: the turn that writes the outcome pauses on it; a bare approve of it, unchanged, applies it.
+    const gate = (reply: string) => script('triage/bin/validate-outcome.ts', { LOOP_USER_INPUT: reply }, artifacts, ['--gate']).code;
+    expect(script('triage/bin/validate-outcome.ts', {}, artifacts).code).toBe(0);
+    expect(gate('move it to ready-for-agent')).toBe(1);
+    expect(gate('')).toBe(1);
+    expect(gate('Approved')).toBe(0);
+    // A term the session sharpened inline is committed with the outcome.
+    writeFileSync(join(repo, 'GLOSSARY.md'), '# Glossary\n\n**Decline**: the gateway refusing a charge.\n');
     const applied = ok('triage/scripts/apply.ts', { INPUTS_ITEM: issue }, artifacts);
     expect(applied.state).toBe('ready-for-agent');
     const body = readFileSync(join(repo, issue), 'utf8');
     expect(body).toContain('**Status:** ready-for-agent');
     expect(body).toContain('## Comments');
     expect(git('status', '--porcelain')).toBe('');
+    expect(git('log', '-1', '--format=%s', '--', 'GLOSSARY.md')).toBe(`docs: glossary and ADRs from triaging ${issue}`);
   });
 });
 
