@@ -34,8 +34,8 @@ export function gate(verdict: ImplementerVerdict, startSha: string, artifacts: s
   const failed = results.filter(result => result.code !== 0);
   if (failed.length > 0) {
     throw new Error(
-      `${failed.length} of ${results.length} declared check(s) failed when re-run:\n` +
-        failed.map(result => `$ ${result.command} (exit ${result.code})\n${result.tail}`).join('\n\n'),
+      `${failed.length} of ${results.length} declared check(s) failed when re-run or were not run:\n` +
+        failed.map(result => `$ ${result.command} (${result.notRun ? 'not run' : `exit ${result.code}`})\n${result.tail}`).join('\n\n'),
     );
   }
   const dirty = exec(['git', 'status', '--porcelain']).stdout.trim();
