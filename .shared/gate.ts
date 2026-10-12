@@ -3,8 +3,17 @@
  * declared (re-run here), and proof that the work is committed and nothing is left
  * behind. An AI node that declines still exits 0, so run status is never the verdict.
  */
-import { declaredCommands, runChecks } from './checks.ts';
+import { ATTEMPTS, declaredCommands, runChecks } from './checks.ts';
+import { note } from './io.ts';
 import { exec, git, tryGit } from './proc.ts';
+
+/** How to run this gate again from where it stopped; '' outside a run. */
+function resumeLine(): string {
+  const runId = process.env.WORKFLOW_ID ?? '';
+  return /^[0-9a-f][0-9a-f-]{7,63}$/i.test(runId)
+    ? `\n\nResuming the run reruns this gate without redoing the work before it: archon workflow resume ${runId} --detach`
+    : '';
+}
 
 export interface ImplementerVerdict {
   readonly done: boolean;
@@ -35,8 +44,12 @@ export function gate(verdict: ImplementerVerdict, startSha: string, artifacts: s
   if (failed.length > 0) {
     throw new Error(
       `${failed.length} of ${results.length} declared check(s) failed when re-run or were not run:\n` +
-        failed.map(result => `$ ${result.command} (${result.notRun ? 'not run' : `exit ${result.code}`})\n${result.tail}`).join('\n\n'),
+        failed.map(result => `$ ${result.command} (${result.notRun ? 'not run' : `exit ${result.code}`})\n${result.tail}`).join('\n\n') +
+        resumeLine(),
     );
+  }
+  for (const result of results.filter(r => r.flaky !== undefined)) {
+    note(`Flaky: \`${result.command}\` failed (exit ${result.flaky!.code}), then passed when run again (up to ${ATTEMPTS} attempts). See checks/${label}.md.`);
   }
   const dirty = exec(['git', 'status', '--porcelain']).stdout.trim();
   if (dirty !== '') {
