@@ -60,10 +60,12 @@ nodes:
       gate_message: >-
         Reply with your direction or answers: `archon workflow approve <run-id>
         "<reply>"` (the full text is in the run's artifacts under
-        triage/current-round.md). When the status line says the completion
-        condition is met, the drafted outcome is ready: approve with NO comment
-        to apply it to the tracker, or with a comment to change it.
-      until_bash: 'bun "$ARTIFACTS_DIR/bin/validate-outcome.ts" >/dev/null 2>&1'
+        triage/current-round.md). When the round presents the drafted outcome,
+        approve with NO comment to apply it to the tracker exactly as shown, or
+        with a comment to change it.
+      # Passes only on a bare approve of the outcome the last gate showed: after
+      # the first iteration, a passing check ends the loop with no gate of its own.
+      until_bash: 'bun "$ARTIFACTS_DIR/bin/validate-outcome.ts" --gate >/dev/null 2>&1'
       nodes:
         - id: triage
           command: triage-session

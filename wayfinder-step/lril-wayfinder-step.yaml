@@ -11,6 +11,10 @@ description: |
   ruled out of scope. When the map clears, it hands off to
   lril-idea-to-tickets rather than building.
 
+  Name the map with --input map. Without it, the run's message is read as the
+  map reference itself (an issue number or URL, or a map.md path), so a prose
+  brief there fails; the message is not otherwise used.
+
   Use when: a wayfinder map exists and you want to push the fog back one
   decision: "next wayfinder ticket on #12", "resolve the auth decision".
   NOT for: charting a new map (lril-wayfinder-chart).
@@ -71,10 +75,12 @@ nodes:
       max_iterations: 40
       gate_message: >-
         Reply with `archon workflow approve <run-id> "<reply>"` (the full text is
-        in the run's artifacts under wayfinder/current-round.md). When the status
-        line says the completion condition is met, approve with NO comment to
-        record the resolution on the map, or with a comment to change it.
-      until_bash: 'bun "$ARTIFACTS_DIR/bin/validate-resolution.ts" >/dev/null 2>&1'
+        in the run's artifacts under wayfinder/current-round.md). When the round
+        presents the resolution, approve with NO comment to record it on the map
+        exactly as shown, or with a comment to change it.
+      # Passes only on a bare approve of the resolution the last gate showed: after
+      # the first iteration, a passing check ends the loop with no gate of its own.
+      until_bash: 'bun "$ARTIFACTS_DIR/bin/validate-resolution.ts" --gate >/dev/null 2>&1'
       nodes:
         - id: resolve
           command: resolve

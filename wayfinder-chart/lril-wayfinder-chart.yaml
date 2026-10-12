@@ -46,10 +46,12 @@ nodes:
       gate_message: >-
         Answer the round above (the full text is in the run's artifacts under
         wayfinder/current-round.md) with `archon workflow approve <run-id>
-        "<answers>"`; "yes" accepts a recommendation. When the status line says
-        the completion condition is met, approve with NO comment to publish the
-        map, or with a comment to revise it.
-      until_bash: 'bun "$ARTIFACTS_DIR/bin/validate-map.ts" >/dev/null 2>&1'
+        "<answers>"`; "yes" accepts a recommendation. When the round presents the
+        final map (or the conclusion that no map is needed), approve with NO
+        comment to publish it exactly as shown, or with a comment to revise it.
+      # Passes only on a bare approve of the draft the last gate showed: after
+      # the first iteration, a passing check ends the loop with no gate of its own.
+      until_bash: 'bun "$ARTIFACTS_DIR/bin/validate-map.ts" --gate >/dev/null 2>&1'
       nodes:
         - id: session
           command: chart

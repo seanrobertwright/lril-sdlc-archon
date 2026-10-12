@@ -14,7 +14,7 @@ The person's reply to your last turn (empty on the first turn):
 
 $INPUTS.reply
 
-(A reply of exactly `Approved` means they approved without a comment.)
+A reply of exactly `Approved` means the person approved without a comment. After a round of questions it accepts every recommended answer. After a turn that presented the resolution, it records it as shown, so change nothing on that turn (a changed draft is shown again instead) and end it with one line saying it goes ahead. The reply is empty only on the first turn: an empty reply after that was lost on the way, so say so and repeat your last turn. Never take silence as agreement.
 
 Keep `$ARTIFACTS_DIR/wayfinder/current-round.md` holding the message you end each turn with, and append each exchange verbatim to `$ARTIFACTS_DIR/wayfinder/transcript.md`. If you have no memory of earlier turns but the transcript exists, rebuild your state from it and say you resumed.
 
@@ -50,6 +50,6 @@ Write `$ARTIFACTS_DIR/wayfinder/resolution.json`:
 }
 ```
 
-Existing refs are the ones in `tickets-index.md`. Run `bun "$ARTIFACTS_DIR/bin/validate-resolution.ts"` and fix whatever it reports. Then end the turn by laying out exactly what will change on the map and say: **approve with no comment to record it, or comment to change it.** Writing a valid resolution ends the loop, so write it only once the person agrees the question is answered.
+Existing refs are the ones in `tickets-index.md`. Run `bun "$ARTIFACTS_DIR/bin/validate-resolution.ts"` and fix whatever it reports. Then end the turn by laying out exactly what will change on the map and say: **approve with no comment to record it, or comment to change it.** The workflow records the resolution only when the person approves it with no comment and the file is unchanged since the turn that showed it. Still, write it only once the person agrees the question is answered.
 
 Resolve only this ticket. Don't build the destination; the pull to just do the work is the signal you've reached the edge of the map.

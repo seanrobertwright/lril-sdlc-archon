@@ -1,10 +1,12 @@
 /**
  * Standalone check for the charting session, staged into the run by preflight.
  * Exit 0 when either a valid map.json exists, or the session concluded no map is
- * needed (wayfinder/no-map.md).
+ * needed (wayfinder/no-map.md). With `--gate` (the loop's until_bash) that
+ * conclusion must also have been approved as shown.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { verdict } from '../../.shared/approval.ts';
 import { mapProblems } from '../../.shared/wayfinder.ts';
 
 const dir = join(process.env.ARTIFACTS_DIR || join(import.meta.dir, '..'), 'wayfinder');
@@ -20,6 +22,7 @@ if (existsSync(join(dir, 'no-map.md'))) {
     problems = ['wayfinder/map.json is not valid JSON'];
   }
 }
+problems = verdict(problems, [join(dir, 'map.json'), join(dir, 'no-map.md')], join(dir, 'shown.sha256'), process.argv);
 if (problems.length > 0) {
   console.error(problems.map(problem => `- ${problem}`).join('\n'));
   process.exitCode = 1;

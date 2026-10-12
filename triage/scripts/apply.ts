@@ -1,10 +1,12 @@
 /**
  * Apply the approved triage outcome: exactly one category and one state label,
  * the comment, the close, and (for a rejected enhancement only) the
- * .out-of-scope/ record. Every tracker write is read back.
+ * .out-of-scope/ record. Every tracker write is read back. Then commit the
+ * glossary terms and ADRs the session wrote inline.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { commitDocs } from '../../.shared/commit.ts';
 import { artifactsDir, emit, run, trimmed } from '../../.shared/io.ts';
 import { appendComment, setField, write } from '../../.shared/local.ts';
 import { exec, must } from '../../.shared/proc.ts';
@@ -57,6 +59,7 @@ run(() => {
     if (!readFileSync(item, 'utf8').includes(stateLabel)) throw new Error(`${item} did not read back with ${stateLabel}.`);
   }
 
+  commitDocs([], `docs: glossary and ADRs from triaging ${item}`);
   emit({
     item,
     category: outcome.category,

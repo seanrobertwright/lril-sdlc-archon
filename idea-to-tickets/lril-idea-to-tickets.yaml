@@ -41,8 +41,10 @@ nodes:
 
   # Grill, spec, tickets: one session, so the spec and tickets build on the
   # interview verbatim rather than on a summary of it. Each iteration is one
-  # round you answer at the gate. The loop completes only when tickets.json
-  # exists AND passes the validator; approving that gate with no comment publishes.
+  # round you answer at the gate. The loop completes only when spec.md and
+  # tickets.json pass the validator AND you approved them, unchanged since the
+  # gate showed them, with no comment. After the first iteration a passing
+  # check ends the loop with no gate of its own, so the approval is part of it.
   - id: shape
     depends_on: [preflight]
     loop_group:
@@ -52,10 +54,10 @@ nodes:
       gate_message: >-
         Answer the round above (the full text is in the run's artifacts under
         shape/current-round.md). Reply with `archon workflow approve <run-id>
-        "<your answers>"`; "yes" accepts a recommendation. When the status line
-        says the completion condition is met, approve with NO comment to publish
-        the spec and tickets, or with a comment to revise them.
-      until_bash: 'bun "$ARTIFACTS_DIR/bin/validate-shape.ts" >/dev/null 2>&1'
+        "<your answers>"`; "yes" accepts a recommendation. When the round
+        presents the final spec and tickets, approve with NO comment to publish
+        them exactly as shown, or with a comment to revise them.
+      until_bash: 'bun "$ARTIFACTS_DIR/bin/validate-shape.ts" --gate >/dev/null 2>&1'
       nodes:
         - id: session
           command: shape
