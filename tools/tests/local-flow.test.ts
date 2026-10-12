@@ -141,8 +141,12 @@ describe('lril-implement-spec frontier and gates', () => {
     writeFileSync(join(repo, 'cards.ts'), 'export const saved = true;\n');
     git('add', 'cards.ts');
     git('commit', '-q', '-m', 'save a card');
-    const red = script('implement-spec/scripts/ticket-gate.ts', { INPUTS_VERDICT: JSON.stringify({ done: true, green: true, summary: 'x', check_commands: ['false'] }), INPUTS_KEY: '01', INPUTS_HEAD_SHA: first.head_sha }, artifacts);
+    const runId = '94a619b4232946c24775dbf6a62194a5';
+    const red = script('implement-spec/scripts/ticket-gate.ts', { INPUTS_VERDICT: JSON.stringify({ done: true, green: true, summary: 'x', check_commands: ['false'] }), INPUTS_KEY: '01', INPUTS_HEAD_SHA: first.head_sha, WORKFLOW_ID: runId }, artifacts);
     expect(red.err).toContain('failed when re-run');
+    // `false` fails each time it is run again, and the refusal says how to run the gate again.
+    expect(red.err).toContain('Failed each time it ran (2 attempts).');
+    expect(red.err).toContain(`archon workflow resume ${runId} --detach`);
 
     const gated = ok('implement-spec/scripts/ticket-gate.ts', { INPUTS_VERDICT: verdict, INPUTS_KEY: '01', INPUTS_HEAD_SHA: first.head_sha }, artifacts);
     expect(gated.remaining).toBe(1);

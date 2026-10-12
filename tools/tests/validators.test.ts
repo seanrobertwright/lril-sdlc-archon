@@ -7,7 +7,7 @@ import { draftProblems, frontier, topoOrder } from '../../.shared/tickets.ts';
 import { DISCLAIMER, outcomeProblems } from '../../.shared/triage.ts';
 import { mapProblems, replaceSection, appendToSection, renderMap } from '../../.shared/wayfinder.ts';
 import { field, readTicket, setField } from '../../.shared/local.ts';
-import { CHECK_BUDGET_MS, runChecks } from '../../.shared/checks.ts';
+import { ATTEMPTS, CHECK_BUDGET_MS, flakyChecks, flakyLine, runChecks } from '../../.shared/checks.ts';
 import { RUNS, TIMEOUT_MS as LOOP_TIMEOUT_MS } from '../../.shared/loop.ts';
 import { approvedAsShown, BARE_APPROVAL } from '../../.shared/approval.ts';
 
@@ -290,5 +290,45 @@ describe('runChecks', () => {
     const record = require('node:fs').readFileSync(join(artifacts, 'checks', 'gate.md'), 'utf8') as string;
     expect(record).toContain('## `sleep 5` exited');
     expect(record).toContain('## `true` was not run');
+  });
+
+  test('a command that fails, then passes when run again, passes and is recorded as flaky', () => {
+    const artifacts = mkdtempSync(join(tmpdir(), 'lril-checks-'));
+    const marker = join(artifacts, 'ran-once').replace(/\\/g, '/');
+    // Fails the first time (and says which test), passes every time after.
+    const flaky = `test -f '${marker}' || { touch '${marker}'; echo 'not ok 3 - inserted commands run in order'; exit 1; }`;
+    const results = runChecks(['true', flaky], artifacts, 'implement');
+    expect(results.map(result => result.code)).toEqual([0, 0]);
+    expect(results[1]?.flaky?.code).toBe(1);
+    expect(results[1]?.flaky?.tail).toContain('not ok 3 - inserted commands run in order');
+    const record = require('node:fs').readFileSync(join(artifacts, 'checks', 'implement.md'), 'utf8') as string;
+    expect(record).toContain(`passed when run again (flaky)`);
+    expect(record).toContain('The first attempt exited 1:');
+    expect(flakyChecks(artifacts)).toEqual([{ label: 'implement', command: flaky, code: 1 }]);
+    expect(flakyLine(artifacts)).toContain('(implement, first exit 1) failed, then passed when run again');
+  });
+
+  test('a command that fails each time it runs fails, and is not called flaky', () => {
+    const artifacts = mkdtempSync(join(tmpdir(), 'lril-checks-'));
+    const counter = join(artifacts, 'runs').replace(/\\/g, '/');
+    const results = runChecks([`echo x >> '${counter}'; exit 3`], artifacts, 'after-review');
+    expect(results[0]?.code).toBe(3);
+    expect(results[0]?.flaky).toBeUndefined();
+    expect(results[0]?.tail).toContain(`Failed each time it ran (${ATTEMPTS} attempts).`);
+    expect((require('node:fs').readFileSync(counter, 'utf8') as string).trim().split('\n')).toHaveLength(ATTEMPTS);
+    expect(flakyChecks(artifacts)).toEqual([]);
+    expect(flakyLine(artifacts)).toBe('');
+  });
+
+  test('a gate run again keeps the other gates\' flaky checks and replaces its own', () => {
+    const artifacts = mkdtempSync(join(tmpdir(), 'lril-checks-'));
+    const marker = join(artifacts, 'ran-once').replace(/\\/g, '/');
+    const flaky = `test -f '${marker}' || { touch '${marker}'; exit 1; }`;
+    runChecks([flaky], artifacts, 'implement');
+    runChecks(['true'], artifacts, 'after-review');
+    expect(flakyChecks(artifacts).map(entry => entry.label)).toEqual(['implement']);
+    // The same gate resumed: its command passes first time now, so it is no longer flaky.
+    runChecks([flaky], artifacts, 'implement');
+    expect(flakyChecks(artifacts)).toEqual([]);
   });
 });
