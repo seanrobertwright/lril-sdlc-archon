@@ -5,7 +5,7 @@ Write the pull request body for this branch. Call the Skill tool with `pr` and f
 Sources, all already on disk:
 
 - The contract: `$ARTIFACTS_DIR/work/work-spec.md`
-- What changed and why: `$ARTIFACTS_DIR/implementation.md`, and the diff: `git diff $fetch.output.start_sha...HEAD`
+- What changed and why: `$ARTIFACTS_DIR/implementation.md`, and the diff: `git diff $sync.output.diff_base...HEAD`, the change against the base it now merges into
 - The two-axis review and the response to it: `$ARTIFACTS_DIR/code-review.md`
 - Check runs re-executed by the gate, as execution evidence: `$ARTIFACTS_DIR/checks/`
 

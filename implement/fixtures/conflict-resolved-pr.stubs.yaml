@@ -1,0 +1,55 @@
+# The base moved while the run was going and its merge conflicts: one fresh
+# resolver commits the merge, the gate re-runs, and only then is the PR published.
+fetch:
+  kind: local
+  ref: ".scratch/checkout/issues/03-saved-cards.md"
+  number: 0
+  title: "stub: saved cards"
+  path: ".scratch/checkout/issues/03-saved-cards.md"
+  spec_path: "/tmp/work-spec.md"
+  has_parent_spec: true
+  start_sha: "0000000000000000000000000000000000000000"
+build:
+  done: true
+  green: true
+  summary: "stub: built"
+  check_commands: ["npm test"]
+gate: { passed: true, commits: 2, checks: 1 }
+review__pin:
+  fixed_point: "0000000"
+  diff_command: "git diff 0000000...HEAD"
+  commit_count: 2
+  spec_path: "/tmp/work-spec.md"
+  spec_source: "file"
+  standards: []
+review__standards: { hard_violations: 1, judgement_calls: 1, worst: "stub" }
+review__spec-axis: { missing: 1, scope_creep: 0, wrong: 0, worst: "stub" }
+review__aggregate:
+  has_findings: true
+  blocking: true
+  standards_findings: 2
+  spec_findings: 1
+  summary: "stub: 3 findings"
+address:
+  done: true
+  green: true
+  summary: "stub: fixed 3"
+  check_commands: ["npm test"]
+recheck: { passed: true, commits: 3, checks: 1 }
+resolve: "stub: Status done"
+sync: { conflicted: true, files: ["CHANGELOG.md"], behind: 3, checks: 0, diff_base: "origin/main" }
+resolve-conflicts:
+  done: true
+  green: true
+  summary: "stub: kept both changelog entries"
+  check_commands: ["npm test"]
+resync-check: { passed: true, commits: 5, checks: 1 }
+pr-body: { title: "stub: saved cards" }
+publish-pr: { pr_url: "https://github.com/acme/shop/pull/7" }
+outcome: { green: true, summary: "stub" }
+fixture:
+  expect: completed
+  inputs:
+    pr: "true"
+  reached: [sync, resolve-conflicts, resync-check, publish-pr]
+exec-code: true

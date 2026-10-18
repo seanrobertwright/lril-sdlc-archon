@@ -152,9 +152,59 @@ nodes:
       start_sha: "$load.output.start_sha"
       label: after-review
 
+  # Bring the integration branch up to date with its base before the PR is written, so it opens
+  # against the base it will merge into. A clean merge re-runs the last gate's checks here; a
+  # conflicted one goes to one fresh resolver, and the gate re-runs after it.
+  - id: sync
+    script: sync-base
+    runtime: bun
+    # Above the gate budget (CHECK_BUDGET_MS): a clean merge re-runs the checks in this node.
+    timeout: 3600000
+    depends_on: [review, recheck]
+    trigger_rule: none_failed_min_one_success
+    when: "$INPUTS.pr == 'true'"
+    with:
+      start_sha: "$load.output.start_sha"
+    output_format:
+      type: object
+      properties:
+        conflicted: { type: boolean }
+        files: { type: array, items: { type: string } }
+        behind: { type: integer }
+        checks: { type: integer }
+        diff_base: { type: string }
+      required: [conflicted, files, behind, checks, diff_base]
+
+  - id: resolve-conflicts
+    command: resolve-conflicts
+    depends_on: [sync]
+    when: "$sync.output.conflicted == true"
+    context: fresh
+    plugins: [mattpocock-skills@mattpocock]
+    skills: [mattpocock-skills:tdd]
+    output_format:
+      type: object
+      properties:
+        done: { type: boolean }
+        green: { type: boolean }
+        summary: { type: string }
+        check_commands: { type: array, items: { type: string } }
+      required: [done, green, summary, check_commands]
+
+  - id: resync-check
+    script: gate
+    runtime: bun
+    # Above the gate budget (CHECK_BUDGET_MS) and the loop bound (.shared/loop.ts); Archon's default is 120 s.
+    timeout: 3600000
+    depends_on: [resolve-conflicts]
+    with:
+      verdict: { from: "$resolve-conflicts.output" }
+      start_sha: "$load.output.start_sha"
+      label: after-sync
+
   - id: pr-body
     command: pr-body
-    depends_on: [review, recheck]
+    depends_on: [sync, resync-check]
     trigger_rule: none_failed_min_one_success
     when: "$INPUTS.pr == 'true'"
     context: fresh
@@ -181,7 +231,7 @@ nodes:
   - id: outcome
     script: outcome
     runtime: bun
-    depends_on: [review, recheck, publish-pr]
+    depends_on: [review, recheck, sync, resync-check, publish-pr]
     trigger_rule: none_failed_min_one_success
     with:
       title: "$load.output.title"

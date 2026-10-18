@@ -242,6 +242,7 @@ describe('check timeouts', () => {
   const MINIMUM_MS: Readonly<Record<string, number>> = {
     gate: CHECK_BUDGET_MS,
     'ticket-gate': CHECK_BUDGET_MS,
+    'sync-base': CHECK_BUDGET_MS,
     'prove-red': RUNS * LOOP_TIMEOUT_MS,
     'prove-green': (RUNS + 1) * LOOP_TIMEOUT_MS,
   };

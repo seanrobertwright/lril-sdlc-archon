@@ -1,5 +1,6 @@
 # Review finds issues: one fresh implementer addresses them, the gate re-runs,
-# a local ticket is marked done, and a PR is written and published.
+# a local ticket is marked done, the base merges in cleanly and is re-checked,
+# and a PR is written and published.
 fetch:
   kind: local
   ref: ".scratch/checkout/issues/03-saved-cards.md"
@@ -37,6 +38,7 @@ address:
   check_commands: ["npm test"]
 recheck: { passed: true, commits: 3, checks: 1 }
 resolve: "stub: Status done"
+sync: { conflicted: false, files: [], behind: 2, checks: 1, diff_base: "origin/main" }
 pr-body: { title: "stub: saved cards" }
 publish-pr: { pr_url: "https://github.com/acme/shop/pull/7" }
 outcome: { green: true, summary: "stub" }
@@ -44,5 +46,5 @@ fixture:
   expect: completed
   inputs:
     pr: "true"
-  reached: [address, recheck, resolve, publish-pr]
+  reached: [address, recheck, resolve, sync, publish-pr]
 exec-code: true
