@@ -1,7 +1,8 @@
 /**
- * A ticket counts as done only when its implementer is green, its declared checks
- * pass when re-run here, and its work is committed. Locally, the ticket file is
- * marked done too, so the tracker agrees with the branch.
+ * A ticket counts as done only when its implementer is green, it declared its check
+ * commands, and its work is committed. The checks are not re-run here: `verify` re-runs
+ * them once on the whole branch. Locally, the ticket file is marked done too, so the
+ * tracker agrees with the branch.
  */
 import { readFileSync } from 'node:fs';
 import { gate, type ImplementerVerdict } from '../../.shared/gate.ts';
@@ -14,7 +15,7 @@ run(() => {
   const artifacts = artifactsDir();
   const key = trimmed(process.env.INPUTS_KEY);
   const verdict = parseJson<ImplementerVerdict>(`the implementer verdict for ${key}`, trimmed(process.env.INPUTS_VERDICT));
-  gate(verdict, trimmed(process.env.INPUTS_HEAD_SHA), artifacts, `ticket-${key.replace(/[^0-9a-z]+/gi, '')}`);
+  gate(verdict, trimmed(process.env.INPUTS_HEAD_SHA), artifacts);
   const graph = readGraph(artifacts);
   const ticket = graph.tickets.find(entry => entry.key === key);
   if (ticket === undefined) throw new Error(`Ticket ${key} is not in the graph.`);

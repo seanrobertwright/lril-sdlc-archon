@@ -16,6 +16,8 @@ Read `GLOSSARY.md` and the relevant ADRs before you change anything.
 
 Keep behaviour covered as you change it. Call the Skill tool with `tdd` for any behaviour you add or alter, and test only at the seams the spec agreed. Never widen the change into unrelated cleanup.
 
+Check only what you touched: after your last change, run the type-check and the test files that cover the code you changed. Don't run the full suite or the build. A deterministic gate re-runs the project's full check commands once, on the final tree, after you.
+
 Commit each coherent fix (stage by name, no AI attribution). Leave nothing uncommitted. Do not push or open a pull request.
 
 ## Report and declare
@@ -23,6 +25,5 @@ Commit each coherent fix (stage by name, no AI attribution). Leave nothing uncom
 Append a `## Review response` section to `$ARTIFACTS_DIR/implementation.md` giving each finding a disposition: **fixed**, or **declined** with its reason.
 
 - `done`: true.
-- `green`: true only when the project's type-check, lint and full test suite ran after your last change and passed.
-- `summary`: what you fixed and what you declined.
-- `check_commands`: the exact project commands you ran. A gate re-runs them.
+- `green`: true when the type-check and the tests covering what you changed ran after your last change and passed.
+- `summary`: what you fixed and what you declined, and the commands you ran.

@@ -1,5 +1,5 @@
 /**
- * After the fix: the same loop passes every time, the regression test passes (or the
+ * After the fix: the same loop passes, the regression test passes (or the
  * missing seam is documented), no [DEBUG-...] instrumentation is left in the diff,
  * and the fix is committed.
  */
@@ -13,20 +13,22 @@ run(() => {
   const regression = trimmed(process.env.INPUTS_REGRESSION_TEST);
   const noSeam = trimmed(process.env.INPUTS_NO_SEAM);
   const start = trimmed(process.env.INPUTS_START);
+  // The cheap checks first, so a fix that can't pass costs no test run.
+  if (exec(['git', 'status', '--porcelain']).stdout.trim() !== '') throw new Error('Uncommitted changes remain; the fix must be committed.');
+  if (Number(git('rev-list', '--count', `${start}..HEAD`)) === 0) throw new Error('Nothing was committed since the run started.');
+  const leftovers = git('diff', `${start}..HEAD`).split('\n').filter(line => line.startsWith('+') && line.includes('[DEBUG-'));
+  if (leftovers.length > 0) throw new Error(`[DEBUG-...] instrumentation is still in the diff:\n${leftovers.slice(0, 5).join('\n')}`);
   const extra: string[] = [];
-  if (regression !== '') {
+  // A regression test that is the loop command itself passes when the loop does; run it once.
+  if (regression !== '' && regression !== command) {
     const result = shell(regression, TIMEOUT_MS);
     extra.push(`## Regression test: exit ${result.code}`, '', `\`${regression}\``, '');
     if (result.code !== 0) throw new Error(`The regression test \`${regression}\` fails (exit ${result.code}).`);
-  } else if (noSeam === '') {
+  } else if (regression === '' && noSeam === '') {
     throw new Error('No regression test, and no documented reason why no correct seam exists.');
   }
   const seconds = runLoop(command, 'green', artifactsDir(), (result, attempt) => {
     if (result.code !== 0) throw new Error(`Run ${attempt} of \`${command}\` still fails after the fix (exit ${result.code}).`);
   }, extra);
-  if (exec(['git', 'status', '--porcelain']).stdout.trim() !== '') throw new Error('Uncommitted changes remain; the fix must be committed.');
-  if (Number(git('rev-list', '--count', `${start}..HEAD`)) === 0) throw new Error('Nothing was committed since the run started.');
-  const leftovers = git('diff', `${start}..HEAD`).split('\n').filter(line => line.startsWith('+') && line.includes('[DEBUG-'));
-  if (leftovers.length > 0) throw new Error(`[DEBUG-...] instrumentation is still in the diff:\n${leftovers.slice(0, 5).join('\n')}`);
   emit({ runs: RUNS, seconds });
 });

@@ -1,6 +1,6 @@
-# Review finds issues: one fresh implementer addresses them, the gate re-runs,
-# a local ticket is marked done, the base merges in cleanly and is re-checked,
-# and a PR is written and published.
+# Review finds issues: one fresh implementer addresses them, the base merges in
+# cleanly, verify re-runs the checks once, a local ticket is marked done, and a PR
+# is written and published.
 fetch:
   kind: local
   ref: ".scratch/checkout/issues/03-saved-cards.md"
@@ -15,7 +15,7 @@ build:
   green: true
   summary: "stub: built"
   check_commands: ["npm test"]
-gate: { passed: true, commits: 2, checks: 1 }
+gate: { passed: true, commits: 2 }
 review__pin:
   fixed_point: "0000000"
   diff_command: "git diff 0000000...HEAD"
@@ -35,10 +35,9 @@ address:
   done: true
   green: true
   summary: "stub: fixed 3"
-  check_commands: ["npm test"]
-recheck: { passed: true, commits: 3, checks: 1 }
 resolve: "stub: Status done"
-sync: { conflicted: false, files: [], behind: 2, checks: 1, diff_base: "origin/main" }
+sync: { conflicted: false, files: [], behind: 2, base: "main", diff_base: "origin/main" }
+verify: { passed: true, commits: 4, checks: 1 }
 pr-body: { title: "stub: saved cards" }
 publish-pr: { pr_url: "https://github.com/acme/shop/pull/7" }
 outcome: { green: true, summary: "stub" }
@@ -46,5 +45,5 @@ fixture:
   expect: completed
   inputs:
     pr: "true"
-  reached: [address, recheck, resolve, sync, publish-pr]
+  reached: [address, sync, verify, resolve, publish-pr]
 exec-code: true

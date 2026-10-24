@@ -234,15 +234,13 @@ describe('approval at the gate', () => {
 
 describe('check timeouts', () => {
   // A script node without `timeout:` gets Archon's 120 s default, which stops a gate
-  // with no verdict. Every node that re-runs project checks declares more than the
-  // gate's total budget, and every feedback-loop node more than its worst case: RUNS
+  // with no verdict. Every node that re-runs project checks (verify) declares more than
+  // the gate's total budget, and every feedback-loop node more than its worst case: RUNS
   // runs plus the regression test, each at the loop's per-run limit.
   const { readdirSync, readFileSync, statSync } = require('node:fs') as typeof import('node:fs');
   const root = join(import.meta.dir, '..', '..');
   const MINIMUM_MS: Readonly<Record<string, number>> = {
-    gate: CHECK_BUDGET_MS,
-    'ticket-gate': CHECK_BUDGET_MS,
-    'sync-base': CHECK_BUDGET_MS,
+    verify: CHECK_BUDGET_MS,
     'prove-red': RUNS * LOOP_TIMEOUT_MS,
     'prove-green': (RUNS + 1) * LOOP_TIMEOUT_MS,
   };

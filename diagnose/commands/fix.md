@@ -36,7 +36,7 @@ If no correct seam exists, **that is the finding**: the architecture is preventi
 - Throwaway harnesses are deleted, or turned into the regression test.
 - Commit the fix with the **hypothesis that turned out correct** in the commit message, so the next debugger learns. Stage files by name; no AI attribution. Leave nothing uncommitted.
 
-A script re-runs the loop three times, runs your regression test, and greps the diff for `[DEBUG-` after you, so declare only what holds.
+A script re-runs the loop, runs your regression test (once, when it is the loop command itself), and greps the diff for `[DEBUG-` after you, so declare only what holds.
 
 ## Report and declare
 

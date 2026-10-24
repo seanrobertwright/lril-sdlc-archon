@@ -7,7 +7,7 @@ You review one diff on one axis only: **does the code faithfully implement the o
 - Diff command: `$pin.output.diff_command` (three-dot, so it compares against the merge-base). The patch is saved at `$ARTIFACTS_DIR/review/diff.patch` and the commit list at `$ARTIFACTS_DIR/review/commits.txt`.
 - The spec, from $pin.output.spec_source: `$pin.output.spec_path`. Read it in full, including any comments it carries. When it is a ticket with a parent spec, both are in force.
 
-The diff is the fact; the spec is the contract. Where the spec names a behaviour, find the code that delivers it, and run it or its tests when that is the only way to know.
+The diff is the fact; the spec is the contract. Where the spec names a behaviour, find the code that delivers it and the test that covers it. Read them; don't run the test suite or the build. When reading truly can't settle a requirement, run the one test file that covers it, and nothing more.
 
 ## Report
 

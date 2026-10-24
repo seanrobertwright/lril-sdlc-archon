@@ -5,9 +5,10 @@ description: |
   thing on one integration branch, which is this run's branch. Works the tickets
   as a task graph: each iteration takes the next frontier ticket (all its
   blockers done), builds it test-first in a fresh context, and a deterministic
-  gate re-runs the project checks before the ticket counts as done. Then one
-  two-axis /code-review over the whole branch, one fix pass, and a PR shaped by
-  /pr that closes the spec and its tickets.
+  gate checks it is green and committed before the ticket counts as done. Then
+  one two-axis /code-review over the whole branch, one fix pass, one
+  independent re-run of the project checks on the final tree, and a PR shaped
+  by /pr that closes the spec and its tickets.
 
   Use when: a multi-ticket spec is ready and you'd rather orchestrate the build
   than drive each ticket: "implement spec #40",
@@ -97,11 +98,10 @@ nodes:
               check_commands: { type: array, items: { type: string } }
             required: [done, green, summary, check_commands]
 
+        # Cheap: green, checks declared, committed. verify re-runs the checks once at the end.
         - id: ticket-gate
           script: ticket-gate
           runtime: bun
-          # Above the gate budget (CHECK_BUDGET_MS) and the loop bound (.shared/loop.ts); Archon's default is 120 s.
-          timeout: 3600000
           depends_on: [next, impl]
           with:
             verdict: { from: "$impl.output" }
@@ -138,29 +138,17 @@ nodes:
         done: { type: boolean }
         green: { type: boolean }
         summary: { type: string }
-        check_commands: { type: array, items: { type: string } }
-      required: [done, green, summary, check_commands]
-
-  - id: recheck
-    script: gate
-    runtime: bun
-    # Above the gate budget (CHECK_BUDGET_MS) and the loop bound (.shared/loop.ts); Archon's default is 120 s.
-    timeout: 3600000
-    depends_on: [fix]
-    with:
-      verdict: { from: "$fix.output" }
-      start_sha: "$load.output.start_sha"
-      label: after-review
+      required: [done, green, summary]
 
   # Bring the integration branch up to date with its base before the PR is written, so it opens
-  # against the base it will merge into. A clean merge re-runs the last gate's checks here; a
-  # conflicted one goes to one fresh resolver, and the gate re-runs after it.
+  # against the base it will merge into. A conflicted merge goes to one fresh resolver; verify
+  # checks the result.
   - id: sync
     script: sync-base
     runtime: bun
-    # Above the gate budget (CHECK_BUDGET_MS): a clean merge re-runs the checks in this node.
-    timeout: 3600000
-    depends_on: [review, recheck]
+    # A fetch of a large base can outlast Archon's 120 s script default.
+    timeout: 600000
+    depends_on: [review, fix]
     trigger_rule: none_failed_min_one_success
     when: "$INPUTS.pr == 'true'"
     with:
@@ -171,9 +159,9 @@ nodes:
         conflicted: { type: boolean }
         files: { type: array, items: { type: string } }
         behind: { type: integer }
-        checks: { type: integer }
+        base: { type: string }
         diff_base: { type: string }
-      required: [conflicted, files, behind, checks, diff_base]
+      required: [conflicted, files, behind, base, diff_base]
 
   - id: resolve-conflicts
     command: resolve-conflicts
@@ -188,26 +176,35 @@ nodes:
         done: { type: boolean }
         green: { type: boolean }
         summary: { type: string }
-        check_commands: { type: array, items: { type: string } }
-      required: [done, green, summary, check_commands]
+      required: [done, green, summary]
 
-  - id: resync-check
-    script: gate
+  # The run's one independent check run: the last ticket's declared check commands,
+  # re-run on the final tree, after the review fixes and the merge with the base.
+  - id: verify
+    script: verify
     runtime: bun
-    # Above the gate budget (CHECK_BUDGET_MS) and the loop bound (.shared/loop.ts); Archon's default is 120 s.
+    # Above the gate budget (CHECK_BUDGET_MS); Archon's default is 120 s.
     timeout: 3600000
-    depends_on: [resolve-conflicts]
+    depends_on: [review, fix, sync, resolve-conflicts]
+    trigger_rule: none_failed_min_one_success
     with:
-      verdict: { from: "$resolve-conflicts.output" }
       start_sha: "$load.output.start_sha"
-      label: after-sync
+      fixer: { from: "$fix.output", if_skipped: null }
+      resolver: { from: "$resolve-conflicts.output", if_skipped: null }
+    output_format:
+      type: object
+      properties:
+        passed: { type: boolean }
+        commits: { type: integer }
+        checks: { type: integer }
+      required: [passed, commits, checks]
 
   - id: pr-body
     command: pr-body
-    depends_on: [sync, resync-check]
-    trigger_rule: none_failed_min_one_success
+    depends_on: [verify]
     when: "$INPUTS.pr == 'true'"
     context: fresh
+    model: medium
     plugins: [mattpocock-skills@mattpocock]
     skills: [mattpocock-skills:pr]
     output_format:
@@ -222,6 +219,7 @@ nodes:
     depends_on: [pr-body]
     with:
       title: "$pr-body.output.title"
+      base: "$sync.output.base"
     output_format:
       type: object
       properties:
@@ -231,7 +229,7 @@ nodes:
   - id: outcome
     script: outcome
     runtime: bun
-    depends_on: [review, recheck, sync, resync-check, publish-pr]
+    depends_on: [verify, publish-pr]
     trigger_rule: none_failed_min_one_success
     with:
       title: "$load.output.title"
