@@ -1,6 +1,7 @@
-# The whole graph builds green, review finds issues, one fix pass runs, and the
-# integration PR is written and published. The build group itself is stubbed:
-# its per-ticket gate is exercised by the real ticket-gate script on a run.
+# The whole graph builds green, review finds issues, one fix pass runs, the base
+# merges in cleanly, and the integration PR is written and published. The build
+# group itself is stubbed: its per-ticket gate is exercised by the real
+# ticket-gate script on a run.
 load:
   tracker: github
   spec_ref: "#40"
@@ -33,9 +34,10 @@ fix:
   summary: "stub: fixed"
   check_commands: ["npm test"]
 recheck: '{"passed":true,"commits":7,"checks":1}'
+sync: { conflicted: false, files: [], behind: 2, checks: 1, diff_base: "origin/main" }
 pr-body: { title: "stub: saved cards" }
 publish-pr: { pr_url: "https://github.com/acme/shop/pull/9" }
 fixture:
   expect: completed
-  reached: [fix, recheck, publish-pr, outcome]
+  reached: [fix, recheck, sync, publish-pr, outcome]
 exec-code: true

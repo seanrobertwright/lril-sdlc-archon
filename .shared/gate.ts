@@ -3,9 +3,23 @@
  * declared (re-run here), and proof that the work is committed and nothing is left
  * behind. An AI node that declines still exits 0, so run status is never the verdict.
  */
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ATTEMPTS, declaredCommands, runChecks } from './checks.ts';
 import { note } from './io.ts';
+import { write } from './local.ts';
 import { exec, git, tryGit } from './proc.ts';
+
+/** The check commands the last gate to pass re-ran, so a later step can re-run the same ones. */
+export function lastGreenCommands(artifacts: string): string[] {
+  const path = join(artifacts, 'checks', 'commands.json');
+  if (!existsSync(path)) return [];
+  try {
+    return declaredCommands(JSON.parse(readFileSync(path, 'utf8')));
+  } catch {
+    return [];
+  }
+}
 
 /** How to run this gate again from where it stopped; '' outside a run. */
 function resumeLine(): string {
@@ -62,5 +76,6 @@ export function gate(verdict: ImplementerVerdict, startSha: string, artifacts: s
   if (commits === 0) {
     throw new Error('Nothing was committed since this run started. The work must be committed to the branch.');
   }
+  write(join(artifacts, 'checks', 'commands.json'), JSON.stringify(commands, null, 2));
   return { passed: true, commits, checks: results.length };
 }
