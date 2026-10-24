@@ -1,5 +1,6 @@
 # The base moved while the run was going and its merge conflicts: one fresh
-# resolver commits the merge, the gate re-runs, and only then is the PR published.
+# resolver commits the merge, verify re-runs the checks once, and only then is the
+# PR published.
 fetch:
   kind: local
   ref: ".scratch/checkout/issues/03-saved-cards.md"
@@ -14,7 +15,7 @@ build:
   green: true
   summary: "stub: built"
   check_commands: ["npm test"]
-gate: { passed: true, commits: 2, checks: 1 }
+gate: { passed: true, commits: 2 }
 review__pin:
   fixed_point: "0000000"
   diff_command: "git diff 0000000...HEAD"
@@ -34,16 +35,13 @@ address:
   done: true
   green: true
   summary: "stub: fixed 3"
-  check_commands: ["npm test"]
-recheck: { passed: true, commits: 3, checks: 1 }
 resolve: "stub: Status done"
-sync: { conflicted: true, files: ["CHANGELOG.md"], behind: 3, checks: 0, diff_base: "origin/main" }
+sync: { conflicted: true, files: ["CHANGELOG.md"], behind: 3, base: "main", diff_base: "origin/main" }
 resolve-conflicts:
   done: true
   green: true
   summary: "stub: kept both changelog entries"
-  check_commands: ["npm test"]
-resync-check: { passed: true, commits: 5, checks: 1 }
+verify: { passed: true, commits: 5, checks: 1 }
 pr-body: { title: "stub: saved cards" }
 publish-pr: { pr_url: "https://github.com/acme/shop/pull/7" }
 outcome: { green: true, summary: "stub" }
@@ -51,5 +49,5 @@ fixture:
   expect: completed
   inputs:
     pr: "true"
-  reached: [sync, resolve-conflicts, resync-check, publish-pr]
+  reached: [sync, resolve-conflicts, verify, resolve, publish-pr]
 exec-code: true

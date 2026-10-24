@@ -1,5 +1,5 @@
-# Green path with a clean review: address and recheck are condition-skipped, no
-# PR is asked for, and the real outcome script reports the run.
+# Green path with a clean review: address is condition-skipped, no PR is asked
+# for, so sync is too; verify still runs, and the real outcome script reports the run.
 fetch:
   kind: github
   ref: "#42"
@@ -14,7 +14,7 @@ build:
   green: true
   summary: "stub: built test-first at the checkout seam"
   check_commands: ["npm test"]
-gate: { passed: true, commits: 2, checks: 1 }
+gate: { passed: true, commits: 2 }
 review__pin:
   fixed_point: "0000000"
   diff_command: "git diff 0000000...HEAD"
@@ -30,7 +30,8 @@ review__aggregate:
   standards_findings: 0
   spec_findings: 0
   summary: "stub: no findings on either axis"
+verify: { passed: true, commits: 2, checks: 1 }
 fixture:
   expect: completed
-  reached: [outcome]
+  reached: [verify, outcome]
 exec-code: true

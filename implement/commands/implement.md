@@ -31,7 +31,7 @@ Call the Skill tool with `tdd` and follow it on every cycle. The rules that matt
 
 When the shape of an interface is itself the question, call the Skill tool with `codebase-design` for the deep-module vocabulary.
 
-Run the type-check and the single test file you're working on regularly. Run the full test suite once at the end.
+Run the type-check and the single test file you're working on regularly. Run the type-check, lint and full test suite once, at the end, after your last change. Run each in the foreground and wait for it to finish; don't background a check or report one that is still running. If a check rewrites tracked files (a build that regenerates committed output), commit what it wrote.
 
 ## Commit
 
@@ -50,4 +50,4 @@ Keep `$ARTIFACTS_DIR/implementation.md` current: what changed and why, the seams
 - `done`: true when another turn would not help, because the work is complete and green or you are definitively blocked.
 - `green`: true only when every acceptance criterion is met and the project's type-check, lint and full test suite ran this turn and passed.
 - `summary`: a few sentences on what you did, what stands, and what blocks, if anything.
-- `check_commands`: the exact commands you ran for type-check, lint and tests, through the project's own scripts (for example `npm run typecheck`, `pnpm test`). A deterministic gate re-runs every one of them after you, so list only commands that pass on your final tree. Never invent a command the project doesn't define.
+- `check_commands`: the exact commands you ran for type-check, lint and the full test suite, through the project's own scripts (for example `npm run typecheck`, `pnpm test`). A deterministic gate re-runs every one of them once, on the final tree after review, so list only commands that pass on your final tree, and not the single-file runs you used along the way. Never invent a command the project doesn't define.

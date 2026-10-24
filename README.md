@@ -34,8 +34,8 @@ flowchart LR
 |---|---|---|---|
 | `setup` | `/setup-matt-pocock-skills` | AFK, no AI | `docs/agents/*.md`, an `## Agent skills` block, GitHub labels |
 | `idea-to-tickets` | `/grill-with-docs` (`grilling`, `domain-modeling`), `/to-spec`, `/to-tickets`, `prototype`, `research`, `codebase-design` | Interactive | A spec and tracer-bullet tickets on your tracker; `GLOSSARY.md` and ADRs committed |
-| `implement` | `/implement` (`tdd`, `codebase-design`, `code-review`, `pr`) | AFK | One ticket built test-first, gated, reviewed on two axes, committed (optional PR) |
-| `implement-spec` | `/implement-spec` (`tdd`, `codebase-design`, `code-review`, `pr`) | AFK | A whole spec on one integration branch, every ticket gated, one review, one PR |
+| `implement` | `/implement` (`tdd`, `codebase-design`, `code-review`, `pr`) | AFK | One ticket built test-first, gated, reviewed on two axes, verified once, committed (optional PR) |
+| `implement-spec` | `/implement-spec` (`tdd`, `codebase-design`, `code-review`, `pr`) | AFK | A whole spec on one integration branch, every ticket gated, one review, verified once, one PR |
 | `code-review` | `code-review` | AFK, read-only | `code-review.md`: Standards and Spec, side by side |
 | `triage` | `/triage` (`grilling`, `domain-modeling`) | Interactive | Labels, an agent brief or triage notes, `.out-of-scope/` records; glossary and ADR edits committed |
 | `diagnose` | `diagnosing-bugs` (`tdd`, `codebase-design`) | AFK | A proven red→green feedback loop, a regression test, the root cause in the commit |
@@ -64,16 +64,17 @@ Matt's skills say what "done" means. The pack checks it with code wherever it ca
 | Tracker configured | every tracker-aware workflow | `docs/agents/issue-tracker.md` exists and names GitHub or local markdown |
 | Plugin version | `setup` | `mattpocock-skills` is installed, enabled, and at v1.3 or later |
 | Shape is publishable | `idea-to-tickets` | the spec has every `/to-spec` section; tickets have acceptance criteria, real blockers, and no cycles. The interview loop can't end until this passes. |
-| Green | `implement`, `implement-spec` (per ticket) | the implementer declared green; **its declared check commands are re-run here** and pass; the work is committed; nothing is left dirty. A command that fails is run once more. One that passes then counts as passed but is marked **flaky** in the check record, the outcome and the PR body. A gate that fails on its checks ends with the `archon workflow resume` command that reruns it. |
-| Up to date with the base | `implement`, `implement-spec` (before the PR) | the branch merges the base branch (`origin/<base>`, fetched just now) before the PR is written, so the PR opens against the base it will land on. A clean merge re-runs the last green gate's check commands. A conflicted one goes to one fresh resolver, which commits the merge or aborts it, and the Green gate re-runs after it. The PR body's diff is taken against that base. It merges and never rebases, because the branch may already be pushed. |
-| Red-capable loop | `diagnose` | the feedback-loop command **fails 3/3 times on the unfixed code, with the user's symptom** in the output. No red loop, no hypotheses. |
-| Green loop | `diagnose` | the same command passes 3/3, the regression test passes (or the missing seam is documented), and no `[DEBUG-…]` lines are left in the diff |
+| Green | `implement`, `implement-spec` (per ticket) | the implementer declared green and named its type-check, lint and test commands; the work is committed; nothing is left dirty. This gate runs no checks: it records the commands for Verified. |
+| Verified | `implement`, `implement-spec` (once, on the final tree) | **the recorded check commands are re-run here, once**, after the review fixes and the merge with the base, and pass. The review fixer and the merge resolver run only the type-check and the tests covering what they touched; this re-run decides, not their own report. A command that fails is run once more. One that passes then counts as passed but is marked **flaky** in the check record, the outcome and the PR body. Files a check command rewrites (a build that regenerates committed output) are stashed and named in the record and the PR body, not a failure. A gate that fails on its checks ends with the `archon workflow resume` command that reruns it. |
+| Up to date with the base | `implement`, `implement-spec` (before the PR) | the branch merges the base branch (`origin/<base>`, fetched just now) before the PR is written, so the PR opens against the base it will land on. A base that origin doesn't have falls back to origin's default branch, and the PR targets that. A conflicted merge goes to one fresh resolver, which commits the merge or aborts it. Verified runs after either. The PR body's diff is taken against that base. It merges and never rebases, because the branch may already be pushed. |
+| Red-capable loop | `diagnose` | the feedback-loop command **fails on the unfixed code, with the user's symptom** in the output. The command itself makes a non-deterministic bug reproduce reliably, so it runs once. No red loop, no hypotheses. |
+| Green loop | `diagnose` | the same command passes, the regression test passes (or the missing seam is documented), and no `[DEBUG-…]` lines are left in the diff |
 | Triage outcome | `triage` | exactly one category and one state; the AI disclaimer; an agent brief, triage notes, or a close shaped as `/triage` requires; `.out-of-scope/` only for a rejected enhancement |
 | Approved as shown | `idea-to-tickets`, `triage`, `wayfinder-chart`, `wayfinder-step` | the draft a session hands on (spec and tickets, outcome, map, resolution) is unchanged since a gate showed it, and you approved that gate with no comment. A session can't publish on its own say-so, or on a reply that never arrived. |
 | Report complete | `architecture`, `retro` | the report exists and renders every candidate |
 | Public writes | everywhere | issues, labels, comments, sub-issues, blocked-by edges and PRs are written by a script and **read back** |
 
-The pack never hardcodes a toolchain. Implementers discover the project's own type-check, lint and test commands and report them, and the gate re-runs exactly those.
+The pack never hardcodes a toolchain. Implementers discover the project's own type-check, lint and test commands and report them, and the Verified gate re-runs exactly those.
 
 ## Prerequisites
 

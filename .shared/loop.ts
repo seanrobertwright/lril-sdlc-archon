@@ -1,13 +1,14 @@
 /**
- * Run a diagnosis feedback loop several times and record each run, so "the loop is
- * red" and "the loop is green" are observations, not claims.
+ * Run a diagnosis feedback loop and record each run, so "the loop is red" and "the loop
+ * is green" are observations, not claims. The loop command makes a non-deterministic bug
+ * reproduce reliably inside itself (build-loop.md), so one run each side is the proof.
  */
 import { join } from 'node:path';
 import { note } from './io.ts';
 import { write } from './local.ts';
 import { shell } from './proc.ts';
 
-export const RUNS = 3;
+export const RUNS = 1;
 export const TIMEOUT_MS = 10 * 60 * 1000;
 
 export interface LoopRun {

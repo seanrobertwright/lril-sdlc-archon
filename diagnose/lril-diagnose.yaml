@@ -3,8 +3,8 @@ description: |
   Matt Pocock's /diagnosing-bugs as a governed run, for the hard ones: a bug
   that resists a first glance, an intermittent flake, a regression between two
   known-good states. Phase 1 builds a tight feedback loop, one command that
-  goes red on THIS bug. A script then proves that command really does go red,
-  repeatedly, before anyone is allowed to theorise. Then the run minimises the
+  goes red on THIS bug. A script then proves that command really does go red
+  before anyone is allowed to theorise. Then the run minimises the
   repro, ranks falsifiable hypotheses, instruments, fixes with a regression
   test at a correct seam, and cleans up. The same script then proves the loop
   green, the regression test passing, and no [DEBUG-] instrumentation left.

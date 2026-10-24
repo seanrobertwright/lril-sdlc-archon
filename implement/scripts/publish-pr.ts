@@ -9,7 +9,7 @@ run(() => {
     title: trimmed(process.env.INPUTS_TITLE),
     bodyPath: join(artifactsDir(), 'pr', 'body.md'),
     closes: number > 0 ? [number] : [],
-    base: trimmed(process.env.BASE_BRANCH),
+    base: trimmed(process.env.INPUTS_BASE),
     draft: false,
   });
   emit({ pr_url: url });

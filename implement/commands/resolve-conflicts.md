@@ -6,7 +6,7 @@ Before its pull request is written, this branch was brought up to date with `$sy
 - The contract the work was built against: `$ARTIFACTS_DIR/work/work-spec.md`.
 - What this branch changed and why: `$ARTIFACTS_DIR/implementation.md`.
 - What the base changed meanwhile: `git log --oneline HEAD..MERGE_HEAD`, and for one file `git diff HEAD...MERGE_HEAD -- <file>`.
-- The check commands the last gate re-ran: `$ARTIFACTS_DIR/checks/commands.json`.
+- The project's check commands: `$ARTIFACTS_DIR/checks/commands.json`.
 
 Read `GLOSSARY.md` and the relevant ADRs before you change anything.
 
@@ -17,7 +17,7 @@ Read `GLOSSARY.md` and the relevant ADRs before you change anything.
 - **Generated files** (a lockfile, a build export, a generated schema or client): don't merge them by hand. Take either side, run the project's own generator, and stage what it writes. Never update a lockfile beyond what the merge needs.
 - When you are done, no conflict marker is left: `git diff --check` is clean and a search for `<<<<<<<` finds nothing.
 
-Then run the project's type-check, lint and full test suite, starting from the commands in `checks/commands.json`, and fix what the merge broke, within the scope of the original change. Commit the merge with `git commit --no-edit`, and any fix after it as its own commit (stage by name, no AI attribution). Leave nothing uncommitted. Do not push or open a pull request.
+Then run the type-check and the test files that cover the conflicted files, and fix what the merge broke, within the scope of the original change. Don't run the full suite or the build: a deterministic gate re-runs every command in `checks/commands.json` once, after you. Commit the merge with `git commit --no-edit`, and any fix after it as its own commit (stage by name, no AI attribution). Leave nothing uncommitted. Do not push or open a pull request.
 
 If the conflicts can't be resolved responsibly, for example because the base removed or redesigned what this branch builds on, run `git merge --abort` and declare `green: false` with the reason. The run then stops before it publishes.
 
@@ -26,6 +26,5 @@ If the conflicts can't be resolved responsibly, for example because the base rem
 Append a `## Merge with the base branch` section to `$ARTIFACTS_DIR/implementation.md`: each conflicted file, and how you resolved it.
 
 - `done`: true.
-- `green`: true only when the merge is committed, and the project's type-check, lint and full test suite ran after your last change and passed.
-- `summary`: what conflicted and how you resolved it.
-- `check_commands`: the exact project commands you ran. A gate re-runs them.
+- `green`: true only when the merge is committed, and the type-check and the tests covering the conflicted files ran after your last change and passed.
+- `summary`: what conflicted, how you resolved it, and the commands you ran.

@@ -23,7 +23,7 @@ Call the Skill tool with `tdd` and follow it on every cycle:
 
 When an interface's shape is the question, call the Skill tool with `codebase-design`.
 
-Make the project runnable first (install with its own package manager in locked mode, never update a lockfile). Run the type-check and the single test file regularly, then the full suite once at the end.
+Make the project runnable first (install with its own package manager in locked mode, never update a lockfile). Run the type-check and the single test file regularly, then the type-check, lint and full suite once at the end, after your last change. Run each in the foreground and wait for it to finish; don't background a check or report one that is still running. If a check rewrites tracked files, commit what it wrote.
 
 ## Commit
 
@@ -38,4 +38,4 @@ Append a `## $next.output.key` section to `$ARTIFACTS_DIR/implementation.md`: wh
 - `done`: true when the ticket is complete and green, or you are definitively blocked.
 - `green`: true only when every acceptance criterion is met and the type-check, lint and full test suite ran after your last change and passed.
 - `summary`: a few sentences.
-- `check_commands`: the exact project commands you ran. A gate re-runs every one, and the ticket counts as done only if they pass.
+- `check_commands`: the exact project commands you ran for type-check, lint and the full suite, not the single-file runs. A gate re-runs them once on the whole branch before the PR.
