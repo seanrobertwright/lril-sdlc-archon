@@ -47,3 +47,5 @@ Write `$ARTIFACTS_DIR/diagnosis.md`: the minimised repro, the ranked hypotheses 
 - `regression_test`: the exact command that runs the new regression test, or `""` when no correct seam exists.
 - `no_seam`: why no correct seam exists, or `""` when you wrote the regression test.
 - `summary`: a few sentences.
+
+Declare only after every other tool call has returned. Declaring ends your session, so a file write or commit still running when you declare is lost.

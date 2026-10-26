@@ -51,3 +51,5 @@ Keep `$ARTIFACTS_DIR/implementation.md` current: what changed and why, the seams
 - `green`: true only when every acceptance criterion is met and the project's type-check, lint and full test suite ran this turn and passed.
 - `summary`: a few sentences on what you did, what stands, and what blocks, if anything.
 - `check_commands`: the exact commands you ran for type-check, lint and the full test suite, through the project's own scripts (for example `npm run typecheck`, `pnpm test`). A deterministic gate re-runs every one of them once, on the final tree after review, so list only commands that pass on your final tree, and not the single-file runs you used along the way. Never invent a command the project doesn't define.
+
+Declare only after every other tool call has returned. Declaring ends your session, so a file write or commit still running when you declare is lost.

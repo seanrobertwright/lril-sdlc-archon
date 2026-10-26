@@ -49,3 +49,5 @@ Then declare:
 - `hard_violations`: how many findings breach a documented standard.
 - `judgement_calls`: how many are judgement calls (baseline smells, style-matching).
 - `worst`: one line naming the worst finding on this axis, or `""` when there are none.
+
+Declare only after every other tool call has returned. Declaring ends your session, so a file write or commit still running when you declare is lost.

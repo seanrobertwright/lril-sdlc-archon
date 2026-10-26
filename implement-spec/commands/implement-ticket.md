@@ -39,3 +39,5 @@ Append a `## $next.output.key` section to `$ARTIFACTS_DIR/implementation.md`: wh
 - `green`: true only when every acceptance criterion is met and the type-check, lint and full test suite ran after your last change and passed.
 - `summary`: a few sentences.
 - `check_commands`: the exact project commands you ran for type-check, lint and the full suite, not the single-file runs. A gate re-runs them once on the whole branch before the PR.
+
+Declare only after every other tool call has returned. Declaring ends your session, so a file write or commit still running when you declare is lost.

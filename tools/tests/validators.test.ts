@@ -194,6 +194,38 @@ describe('output references in command files', () => {
   });
 });
 
+describe('declaring output', () => {
+  // Declaring structured output ends the agent's session. A file write or commit sent in
+  // the same turn can still be running, and is lost: a pr-body agent once wrote its body
+  // and declared its title in parallel, and publish-pr found no body. Every command whose
+  // node declares output says to declare only after every other tool call has returned.
+  const { readdirSync, readFileSync, statSync } = require('node:fs') as typeof import('node:fs');
+  const root = join(import.meta.dir, '..', '..');
+  type Node = { id?: string; command?: string; output_format?: unknown; loop_group?: { nodes?: Node[] } };
+  const walk = (nodes: Node[] = []): Node[] => nodes.flatMap(node => [node, ...walk(node.loop_group?.nodes)]);
+  const commands = readdirSync(root)
+    .filter(folder => !folder.startsWith('.') && statSync(join(root, folder)).isDirectory())
+    .flatMap(folder => {
+      const yaml = readdirSync(join(root, folder)).find(name => /^lril-.*\.yaml$/.test(name));
+      if (yaml === undefined) return [];
+      const workflow = Bun.YAML.parse(readFileSync(join(root, folder, yaml), 'utf8')) as { nodes?: Node[] };
+      return walk(workflow.nodes)
+        .filter(node => node.command !== undefined && node.output_format !== undefined)
+        .map(node => `${folder}/commands/${node.command}.md`);
+    });
+
+  test('the pack has agent nodes that declare output', () => {
+    expect(commands.length).toBeGreaterThan(0);
+  });
+
+  test('every such command says to declare only after its other tool calls return', () => {
+    const offenders = [...new Set(commands)].filter(
+      path => !readFileSync(join(root, path), 'utf8').includes('Declare only after every other tool call has returned.'),
+    );
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('approval at the gate', () => {
   // After an interactive loop's first iteration, a passing until_bash ends the loop
   // with no gate. A draft is applied only on a bare approve of the draft last shown.

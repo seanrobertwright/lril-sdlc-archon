@@ -18,3 +18,5 @@ A check record headed "passed when run again (flaky)" means that command failed 
 Write the body to `$ARTIFACTS_DIR/pr/body.md`. Don't add "Closes" lines; the publishing step adds them for the tracked tickets. Don't push or call `gh`; the next node publishes and reads the result back.
 
 Declare `title`: a short, human title for the change, written in the glossary's terms.
+
+Declare only after every other tool call has returned. Declaring ends your session, so a file write or commit still running when you declare is lost.
