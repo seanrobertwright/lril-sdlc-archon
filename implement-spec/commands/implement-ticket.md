@@ -9,7 +9,7 @@ $next.output.key: $next.output.title
 - The ticket, in full: `$ARTIFACTS_DIR/current/ticket.md`. Its acceptance criteria define done.
 - The spec it belongs to: `$load.output.spec_path`. It gives the why, the agreed seams (*Testing Decisions*), and what is out of scope.
 - Exploration notes: `$ARTIFACTS_DIR/notes/overview.md` and `$ARTIFACTS_DIR/notes/ticket-*.md` for this ticket. Start there before exploring yourself.
-- What earlier tickets built: `git log $load.output.start_sha..HEAD`.
+- What earlier tickets built: `git log <start>..HEAD`, where `<start>` is `$load.output.start_sha`.
 
 Read `GLOSSARY.md` and the ADRs in the area you touch. Name things in the glossary's vocabulary. If your change must contradict an ADR, say so explicitly rather than overriding it silently.
 
