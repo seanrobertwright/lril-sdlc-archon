@@ -2,8 +2,9 @@
  * The two gates around the implementers.
  *
  * `gate` follows each implementer: its own verdict, the check commands it declared,
- * and proof that the work is committed and nothing is left behind. It does not re-run
- * the checks; it records them for `verify`.
+ * and proof that the work is committed and nothing is left behind. It records the
+ * commands for `verify`, and runs them itself only for an implementer that met every
+ * acceptance criterion but did not report green.
  *
  * `verify` runs once per run, on the final tree, after the review fixes and the merge
  * with the base. It re-runs the recorded check commands independently: "I ran the
@@ -39,6 +40,8 @@ function resumeLine(): string {
 export interface ImplementerVerdict {
   readonly done: boolean;
   readonly green: boolean;
+  /** Every acceptance criterion is met, whatever the checks did. Absent counts as false. */
+  readonly criteria_met?: boolean;
   readonly summary: string;
   readonly check_commands: readonly string[];
 }
@@ -77,19 +80,37 @@ function committedSince(startSha: string): number {
   return commits;
 }
 
-/** After an implementer: green by its own account, checks declared, work committed. Runs no checks. */
+/**
+ * After an implementer: green by its own account, checks declared, work committed. A green
+ * implementer's checks are not run here. One that is done and meets every acceptance
+ * criterion but did not report green (a check that failed only in its own sandbox, or one
+ * still running when it reported) has its declared checks run here instead, and passes
+ * only if every one of them does.
+ */
 export function gate(verdict: ImplementerVerdict, startSha: string, artifacts: string): GateResult {
-  if (!verdict.green) {
-    throw new Error(`The implementer did not reach green.\n${verdict.summary}`);
-  }
+  const notGreen = `The implementer did not reach green.\n${verdict.summary}`;
+  if (!verdict.green && !(verdict.done && verdict.criteria_met === true)) throw new Error(notGreen);
   const commands = declaredCommands(verdict.check_commands);
   if (commands.length === 0) {
+    if (!verdict.green) throw new Error(notGreen);
     throw new Error(
       'The implementer declared no project checks. It must report the type-check, lint and test commands it ran. ' +
         'A repo with no checks at all needs a guardrail first; lril-retro flags that.',
     );
   }
   const commits = committedSince(startSha);
+  if (!verdict.green) {
+    const results = runChecks(commands, artifacts, 'gate');
+    const failed = results.filter(result => result.code !== 0);
+    if (failed.length > 0) {
+      throw new Error(
+        `${notGreen}\n\n${failed.length} of ${results.length} declared check(s) also failed when the gate ran them:\n` +
+          failed.map(result => `$ ${result.command} (${result.notRun ? 'not run' : `exit ${result.code}`})\n${result.tail}`).join('\n\n') +
+          resumeLine(),
+      );
+    }
+    note(`The implementer did not report green, but met every acceptance criterion, and all ${results.length} check(s) it declared passed when the gate ran them. See checks/gate.md.\n${verdict.summary}`);
+  }
   write(join(artifacts, 'checks', 'commands.json'), JSON.stringify(commands, null, 2));
   return { passed: true, commits };
 }

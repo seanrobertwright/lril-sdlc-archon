@@ -22,3 +22,5 @@ Quote the spec line for each finding. Keep it under 400 words. When the diff ful
 Do not modify any file other than your report.
 
 Then declare `missing`, `scope_creep` and `wrong` as the counts of (a), (b) and (c), and `worst`: one line naming the worst finding on this axis, or `""` when there are none.
+
+Declare only after every other tool call has returned. Declaring ends your session, so a file write or commit still running when you declare is lost.

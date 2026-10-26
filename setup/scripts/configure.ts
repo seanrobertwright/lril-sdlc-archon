@@ -10,8 +10,22 @@ import { write } from '../../.shared/local.ts';
 
 const TEMPLATES = join(import.meta.dir, '..', 'templates');
 
+/**
+ * A seed template as written to the repo: verbatim, except that a code fence opened
+ * with no language gets `text`. Markdownlint's MD040 rejects a bare fence, so a repo
+ * whose pre-commit hook lints markdown refused setup's commit.
+ */
 function template(name: string): string {
-  return readFileSync(join(TEMPLATES, name), 'utf8');
+  let inFence = false;
+  return readFileSync(join(TEMPLATES, name), 'utf8')
+    .split('\n')
+    .map(line => {
+      const fence = /^(\s*)```(.*)$/.exec(line);
+      if (fence === null) return line;
+      inFence = !inFence;
+      return inFence && fence[2]!.trim() === '' ? `${fence[1]}\`\`\`text` : line;
+    })
+    .join('\n');
 }
 
 function block(tracker: 'github' | 'local'): string {
@@ -35,10 +49,13 @@ function block(tracker: 'github' | 'local'): string {
   ].join('\n');
 }
 
-/** Replace an existing `## Agent skills` section in place, or append one. */
+/**
+ * Replace an existing `## Agent skills` section in place, or append one. A new file opens
+ * with a top-level heading, which markdownlint's MD041 requires of a file's first line.
+ */
 function withBlock(existing: string, section: string): string {
   const start = existing.search(/^## Agent skills\s*$/m);
-  if (start === -1) return existing.trim() === '' ? section : `${existing.trimEnd()}\n\n${section}`;
+  if (start === -1) return existing.trim() === '' ? `# Agent instructions\n\n${section}` : `${existing.trimEnd()}\n\n${section}`;
   const after = existing.slice(start + 1);
   const next = after.search(/^## /m);
   const rest = next === -1 ? '' : existing.slice(start + 1 + next);

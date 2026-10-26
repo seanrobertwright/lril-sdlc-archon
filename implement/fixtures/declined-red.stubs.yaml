@@ -12,6 +12,7 @@ fetch:
 build:
   done: true
   green: false
+  criteria_met: false
   summary: "stub: blocked, the ticket contradicts the order model"
   check_commands: []
 fixture:

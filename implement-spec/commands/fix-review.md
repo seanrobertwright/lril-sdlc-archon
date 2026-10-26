@@ -27,3 +27,5 @@ Append a `## Review response` section to `$ARTIFACTS_DIR/implementation.md` givi
 - `done`: true.
 - `green`: true when the type-check and the tests covering what you changed ran after your last change and passed.
 - `summary`: what you fixed and what you declined, and the commands you ran.
+
+Declare only after every other tool call has returned. Declaring ends your session, so a file write or commit still running when you declare is lost.

@@ -69,3 +69,5 @@ Also write `$ARTIFACTS_DIR/candidates.json`:
 ```
 
 A script checks both files after you. Declare `candidates` (the count) and `top` (the top recommendation's title).
+
+Declare only after every other tool call has returned. Declaring ends your session, so a file write or commit still running when you declare is lost.

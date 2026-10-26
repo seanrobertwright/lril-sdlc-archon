@@ -30,3 +30,5 @@ Write `$ARTIFACTS_DIR/feedback-loop.md`: the loop command, how it reaches the bu
 - `command`: the exact command.
 - `symptom`: the literal substring every red run's output contains, or `""`.
 - `summary`: a few sentences on the loop and why it's tight.
+
+Declare only after every other tool call has returned. Declaring ends your session, so a file write or commit still running when you declare is lost.

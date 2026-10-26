@@ -28,3 +28,5 @@ Append a `## Merge with the base branch` section to `$ARTIFACTS_DIR/implementati
 - `done`: true.
 - `green`: true only when the merge is committed, and the type-check and the tests covering the conflicted files ran after your last change and passed.
 - `summary`: what conflicted, how you resolved it, and the commands you ran.
+
+Declare only after every other tool call has returned. Declaring ends your session, so a file write or commit still running when you declare is lost.

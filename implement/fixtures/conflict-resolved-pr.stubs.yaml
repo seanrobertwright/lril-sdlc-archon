@@ -13,6 +13,7 @@ fetch:
 build:
   done: true
   green: true
+  criteria_met: true
   summary: "stub: built"
   check_commands: ["npm test"]
 gate: { passed: true, commits: 2 }
