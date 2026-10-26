@@ -5,7 +5,7 @@ Write the pull request body for this integration branch, which implements a whol
 Sources, all already on disk:
 
 - The contract: the spec at `$load.output.spec_path` and the tickets in `$ARTIFACTS_DIR/state/graph.json`
-- What changed and why: `$ARTIFACTS_DIR/implementation.md`, and the diff: `git diff $sync.output.diff_base...HEAD`, the change against the base it now merges into
+- What changed and why: `$ARTIFACTS_DIR/implementation.md`, and the diff: `git diff <base>...HEAD`, where `<base>` is `$sync.output.diff_base`, the change against the base it now merges into
 - The two-axis review and the response to it: `$ARTIFACTS_DIR/code-review.md`
 - The project checks, re-run by the verify gate on the final tree, as execution evidence: `$ARTIFACTS_DIR/checks/verify.md`
 

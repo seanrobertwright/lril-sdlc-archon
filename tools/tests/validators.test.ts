@@ -176,6 +176,24 @@ describe('interactive replies', () => {
   });
 });
 
+describe('output references in command files', () => {
+  // Archon v0.12.1 reads a run of dots after `$node.output.field` as part of the
+  // reference, so `$load.output.start_sha..HEAD` fails the node before it starts.
+  // Name the value with a placeholder in the git range and give the reference apart.
+  const { readdirSync, readFileSync, existsSync } = require('node:fs') as typeof import('node:fs');
+  const root = join(import.meta.dir, '..', '..');
+  const folders = readdirSync(root).filter(name => existsSync(join(root, name, 'commands')));
+
+  test('no output reference is followed by `..`', () => {
+    const offenders = folders.flatMap(folder =>
+      readdirSync(join(root, folder, 'commands'))
+        .filter(file => /\$[A-Za-z_-]+\.output(\.[A-Za-z_]+)*\.\./.test(readFileSync(join(root, folder, 'commands', file), 'utf8')))
+        .map(file => `${folder}/commands/${file}`),
+    );
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('approval at the gate', () => {
   // After an interactive loop's first iteration, a passing until_bash ends the loop
   // with no gate. A draft is applied only on a bare approve of the draft last shown.
