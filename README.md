@@ -104,7 +104,7 @@ Entrypoints run as `seanrobertwright/lril-sdlc:<entrypoint>`, for example `seanr
 archon workflow run seanrobertwright/lril-sdlc:setup --no-worktree
 ```
 
-It picks GitHub when `origin` is on github.com, otherwise local markdown under `.scratch/`. Override with `--input tracker=local`. It writes Matt's own seed templates, so his skills work in the same repo outside Archon too. Existing `docs/agents` files are kept (`--input overwrite=true` replaces them).
+It picks GitHub when `origin` is on github.com, otherwise local markdown under `.scratch/`. Override with `--input tracker=local`. It writes Matt's own seed templates, so his skills work in the same repo outside Archon too. A code fence in them with no language is written as `text`, and a new `CLAUDE.md` or `AGENTS.md` opens with a top-level heading, so a repo that runs markdownlint on commit accepts setup's commit. Existing `docs/agents` files are kept (`--input overwrite=true` replaces them).
 
 ### 2. Shape an idea (interactive)
 

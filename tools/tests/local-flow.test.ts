@@ -60,6 +60,12 @@ describe('lril-setup', () => {
     expect(configured.agents_file).toBe('CLAUDE.md');
     expect(readFileSync(join(repo, 'docs/agents/issue-tracker.md'), 'utf8')).toContain('# Issue tracker: Local Markdown');
     expect(readFileSync(join(repo, 'CLAUDE.md'), 'utf8')).toContain('## Agent skills');
+    // What markdownlint's MD041 and MD040 require, so a repo that lints markdown on commit accepts it.
+    expect(readFileSync(join(repo, 'CLAUDE.md'), 'utf8')).toStartWith('# ');
+    const domain = readFileSync(join(repo, 'docs/agents/domain.md'), 'utf8');
+    expect(domain).toContain('```text\n/\n');
+    const openings = domain.split('\n').filter(line => line.startsWith('```')).filter((_, at) => at % 2 === 0);
+    expect(openings).not.toContain('```');
     const committed = ok('setup/scripts/commit.ts', { INPUTS_AGENTS_FILE: 'CLAUDE.md', INPUTS_TRACKER: 'local' }, artifacts);
     expect(committed.committed).toBe(true);
   });
