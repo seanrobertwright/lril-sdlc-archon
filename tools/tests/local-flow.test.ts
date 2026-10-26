@@ -165,6 +165,35 @@ describe('lril-implement-spec frontier and gates', () => {
     const result = script('implement/scripts/gate.ts', { INPUTS_VERDICT: JSON.stringify({ done: true, green: false, summary: 'blocked: contradicts the order model', check_commands: [] }), INPUTS_START_SHA: git('rev-parse', 'HEAD') }, freshArtifacts());
     expect(result.err).toContain('did not reach green');
   });
+
+  test('a decline that claims its criteria met still runs nothing when it declares no checks', () => {
+    const result = script('implement/scripts/gate.ts', { INPUTS_VERDICT: JSON.stringify({ done: true, green: false, criteria_met: true, summary: 'no checks', check_commands: [] }), INPUTS_START_SHA: git('rev-parse', 'HEAD') }, freshArtifacts());
+    expect(result.err).toContain('did not reach green');
+  });
+
+  test('an implementer that met its criteria but did not report green passes only if the gate runs its checks green', () => {
+    const start = git('rev-parse', 'HEAD');
+    writeFileSync(join(repo, 'trust.ts'), 'export const trusted = true;\n');
+    git('add', 'trust.ts');
+    git('commit', '-q', '-m', 'trust a certificate');
+    const verdict = (check_commands: string[], criteria_met = true) =>
+      JSON.stringify({ done: true, green: false, criteria_met, summary: 'two tests fail only in my sandbox', check_commands });
+
+    // Not every criterion met: refused without running anything (`false` would fail too).
+    expect(script('implement/scripts/gate.ts', { INPUTS_VERDICT: verdict(['true'], false), INPUTS_START_SHA: start }, freshArtifacts()).err).toContain('did not reach green');
+
+    // Criteria met, but a declared check also fails in the gate: refused, naming it.
+    const failing = script('implement/scripts/gate.ts', { INPUTS_VERDICT: verdict(['true', 'false']), INPUTS_START_SHA: start }, freshArtifacts());
+    expect(failing.code).not.toBe(0);
+    expect(failing.err).toContain('1 of 2 declared check(s) also failed when the gate ran them');
+    expect(failing.err).toContain('$ false');
+
+    // Criteria met and every declared check passes in the gate: it passes and records them.
+    const artifacts = freshArtifacts();
+    const passed = ok('implement/scripts/gate.ts', { INPUTS_VERDICT: verdict(['true']), INPUTS_START_SHA: start }, artifacts);
+    expect(passed.passed).toBe(true);
+    expect(JSON.parse(readFileSync(join(artifacts, 'checks', 'commands.json'), 'utf8'))).toEqual(['true']);
+  });
 });
 
 describe('lril-implement fetch', () => {

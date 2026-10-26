@@ -94,14 +94,18 @@ nodes:
             properties:
               done: { type: boolean }
               green: { type: boolean }
+              criteria_met: { type: boolean }
               summary: { type: string }
               check_commands: { type: array, items: { type: string } }
-            required: [done, green, summary, check_commands]
+            required: [done, green, criteria_met, summary, check_commands]
 
         # Cheap: green, checks declared, committed. verify re-runs the checks once at the end.
+        # An implementer that met every criterion but did not report green has its checks
+        # run here instead, so the gate needs the verify timeout (CHECK_BUDGET_MS).
         - id: ticket-gate
           script: ticket-gate
           runtime: bun
+          timeout: 3600000
           depends_on: [next, impl]
           with:
             verdict: { from: "$impl.output" }

@@ -29,7 +29,7 @@ Make the project runnable first (install with its own package manager in locked 
 
 Commit as you go (stage by name, never `git add -A`; human messages, no AI attribution). Leave nothing uncommitted. Don't push, open a pull request, or edit the tracker.
 
-If the ticket can't be built responsibly (it contradicts the code or an earlier ticket, or a prerequisite is missing), stop with `done: true, green: false` and the blocker in `summary`.
+If the ticket can't be built responsibly (it contradicts the code or an earlier ticket, or a prerequisite is missing), stop with `done: true, green: false, criteria_met: false` and the blocker in `summary`.
 
 ## Report and declare
 
@@ -37,6 +37,7 @@ Append a `## $next.output.key` section to `$ARTIFACTS_DIR/implementation.md`: wh
 
 - `done`: true when the ticket is complete and green, or you are definitively blocked.
 - `green`: true only when every acceptance criterion is met and the type-check, lint and full test suite ran after your last change and passed.
+- `criteria_met`: true when every acceptance criterion is met, whatever the checks did. When it is true but `green` is not (a check fails only in your sandbox, or had not finished), the gate runs your `check_commands` itself and continues only if all of them pass.
 - `summary`: a few sentences.
 - `check_commands`: the exact project commands you ran for type-check, lint and the full suite, not the single-file runs. A gate re-runs them once on the whole branch before the PR.
 

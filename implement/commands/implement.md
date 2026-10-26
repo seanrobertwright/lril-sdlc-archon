@@ -41,7 +41,7 @@ Do not push, open a pull request, or edit the tracker. Later nodes do that.
 
 ## If you cannot do the work
 
-If the ticket is impossible or too ambiguous to build responsibly (it names behaviour that contradicts the code, a prerequisite is missing, or two criteria conflict), say so plainly and stop with `done: true, green: false`, the blocker in `summary`. A clear refusal is a good outcome; code built on a broken premise is not.
+If the ticket is impossible or too ambiguous to build responsibly (it names behaviour that contradicts the code, a prerequisite is missing, or two criteria conflict), say so plainly and stop with `done: true, green: false, criteria_met: false`, the blocker in `summary`. A clear refusal is a good outcome; code built on a broken premise is not.
 
 ## Report and declare (every turn)
 
@@ -49,6 +49,7 @@ Keep `$ARTIFACTS_DIR/implementation.md` current: what changed and why, the seams
 
 - `done`: true when another turn would not help, because the work is complete and green or you are definitively blocked.
 - `green`: true only when every acceptance criterion is met and the project's type-check, lint and full test suite ran this turn and passed.
+- `criteria_met`: true when every acceptance criterion is met, whatever the checks did. When it is true but `green` is not (a check fails only in your sandbox, or had not finished), the gate runs your `check_commands` itself and continues only if all of them pass.
 - `summary`: a few sentences on what you did, what stands, and what blocks, if anything.
 - `check_commands`: the exact commands you ran for type-check, lint and the full test suite, through the project's own scripts (for example `npm run typecheck`, `pnpm test`). A deterministic gate re-runs every one of them once, on the final tree after review, so list only commands that pass on your final tree, and not the single-file runs you used along the way. Never invent a command the project doesn't define.
 

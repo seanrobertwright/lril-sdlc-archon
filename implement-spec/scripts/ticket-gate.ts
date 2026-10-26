@@ -1,7 +1,8 @@
 /**
  * A ticket counts as done only when its implementer is green, it declared its check
- * commands, and its work is committed. The checks are not re-run here: `verify` re-runs
- * them once on the whole branch. Locally, the ticket file is marked done too, so the
+ * commands, and its work is committed. The checks are not re-run here for a green
+ * implementer: `verify` re-runs them once on the whole branch. An implementer that met
+ * every acceptance criterion but did not report green has them run here (see `gate`). Locally, the ticket file is marked done too, so the
  * tracker agrees with the branch.
  */
 import { readFileSync } from 'node:fs';
