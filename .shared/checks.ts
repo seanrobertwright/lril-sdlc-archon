@@ -14,6 +14,8 @@ export interface CheckResult {
   readonly command: string;
   readonly code: number;
   readonly tail: string;
+  /** It ran past this limit, in milliseconds, and was stopped with everything it started. */
+  readonly timedOutMs?: number;
   /** The gate's budget was spent before this command could start. */
   readonly notRun?: true;
   /** It failed, then passed when run again: the failed attempt's exit code and output. */
@@ -29,6 +31,8 @@ export interface FlakyCheck {
 }
 
 const TIMEOUT_MS = 20 * 60 * 1000;
+/** Sets the per-command limit, in minutes, for a project or a run (see `checkLimitMs`). */
+const LIMIT_SETTING = 'LRIL_CHECK_TIMEOUT_MINUTES';
 /**
  * The most one gate spends on all its commands together. Every node that runs a gate
  * declares a `timeout:` above it, so the gate returns a verdict before Archon stops it.
@@ -37,9 +41,36 @@ export const CHECK_BUDGET_MS = 55 * 60 * 1000;
 /**
  * How often a command runs before the gate calls it failed. A command that fails runs
  * once more, so one flaky test does not cost a run hours old; a command that passes
- * only then is marked flaky wherever the gate's result is shown.
+ * only then is marked flaky wherever the gate's result is shown. A command that times
+ * out is not run again.
  */
 export const ATTEMPTS = 2;
+
+/**
+ * How long one check command may run: `value`, the text of LRIL_CHECK_TIMEOUT_MINUTES, or
+ * 20 minutes when that is not set. Refuses text that is not a positive decimal number of
+ * minutes, at most the gate's budget.
+ */
+export function checkLimitMs(value: string | undefined = process.env[LIMIT_SETTING]): number {
+  if (value === undefined) return TIMEOUT_MS;
+  const text = value.trim();
+  const ms = /^\d+(\.\d+)?$/.test(text) ? Math.round(Number(text) * 60_000) : Number.NaN;
+  if (!(ms >= 1 && ms <= CHECK_BUDGET_MS)) {
+    throw new Error(`${LIMIT_SETTING} must be a number of minutes above 0 and at most ${CHECK_BUDGET_MS / 60_000}, the gate's whole budget (got "${value}").`);
+  }
+  return ms;
+}
+
+/** "20 min", or seconds below a minute. */
+function duration(ms: number): string {
+  return ms < 60_000 ? `${Math.round(ms / 100) / 10} s` : `${Math.round(ms / 6000) / 10} min`;
+}
+
+/** How a command ended, as a gate's message names it. */
+export function describeResult(result: CheckResult): string {
+  if (result.notRun) return 'not run';
+  return result.timedOutMs === undefined ? `exit ${result.code}` : `timed out after ${duration(result.timedOutMs)}`;
+}
 
 function tail(text: string, lines = 40): string {
   return text.trimEnd().split('\n').slice(-lines).join('\n');
@@ -63,7 +94,8 @@ function record(label: string, results: readonly CheckResult[], running?: string
           '',
         ];
       }
-      return [`## \`${result.command}\` exited ${result.code}`, '', '```text', result.tail, '```', ''];
+      const ending = result.timedOutMs === undefined ? `exited ${result.code}` : describeResult(result);
+      return [`## \`${result.command}\` ${ending}`, '', '```text', result.tail, '```', ''];
     }),
     ...(running === undefined ? [] : [isAgain ? `## \`${running}\` failed and is running again` : `## \`${running}\` is running`, '']),
   ].join('\n');
@@ -100,14 +132,19 @@ export function flakyChecks(artifacts: string): FlakyCheck[] {
 /**
  * Run every command within `budgetMs` in total; write a markdown record under
  * `checks/<label>.md`. Each command gets the per-command limit or what is left of the
- * budget, whichever is less; a command stopped at the budget fails, and the commands
- * after it are recorded as not run. A command that fails runs up to `ATTEMPTS` times
- * while budget is left; one that passes on a later attempt counts as passed and is
- * recorded as flaky, here and in `checks/flaky.json`. The record is rewritten before
- * and after each attempt, so a gate stopped part-way still shows which commands
- * finished and which one was running.
+ * budget, whichever is less; a command stopped at either fails, timed out, and is not run
+ * again. The commands after one stopped at the budget are recorded as not run. A command
+ * that fails by itself runs up to `ATTEMPTS` times while budget is left; one that passes
+ * on a later attempt counts as passed and is recorded as flaky, here and in
+ * `checks/flaky.json`. The record is rewritten before each attempt and at the end, so a
+ * gate stopped part-way still shows which commands finished and which one was running.
  */
-export function runChecks(commands: readonly string[], artifacts: string, label: string, budgetMs = CHECK_BUDGET_MS): CheckResult[] {
+export function runChecks(
+  commands: readonly string[],
+  artifacts: string,
+  label: string,
+  { budgetMs = CHECK_BUDGET_MS, limitMs = checkLimitMs() }: { readonly budgetMs?: number; readonly limitMs?: number } = {},
+): CheckResult[] {
   const path = join(artifacts, 'checks', `${label}.md`);
   if (commands.length === 0) {
     write(path, `# Checks: ${label}\n\nNo check commands were declared.\n`);
@@ -116,12 +153,14 @@ export function runChecks(commands: readonly string[], artifacts: string, label:
   }
   const deadline = Date.now() + budgetMs;
   const minutes = Math.round(budgetMs / 6000) / 10;
-  const attempt = (command: string): { code: number; tail: string; isAtDeadline: boolean } => {
-    const limit = Math.min(TIMEOUT_MS, deadline - Date.now());
+  const attempt = (command: string): { code: number; tail: string; timedOutMs?: number } => {
+    // At least 1: a timeout of 0 is no limit.
+    const limit = Math.max(1, Math.min(limitMs, deadline - Date.now()));
     const result = shell(command, limit);
-    const isAtDeadline = result.code !== 0 && limit < TIMEOUT_MS && Date.now() >= deadline;
-    const note = isAtDeadline ? `\nStopped at the end of the gate's ${minutes}-minute budget.` : '';
-    return { code: result.code, tail: tail(`${result.stdout}\n${result.stderr}`) + note, isAtDeadline };
+    const output = tail(`${result.stdout}\n${result.stderr}`);
+    if (!result.timedOut) return { code: result.code, tail: output };
+    const note = limit < limitMs ? `\nStopped at the end of the gate's ${minutes}-minute budget.` : `\nStopped at the ${duration(limit)} limit on one command, which ${LIMIT_SETTING} sets.`;
+    return { code: result.code, tail: output + note, timedOutMs: limit };
   };
   const results: CheckResult[] = [];
   for (const command of commands) {
@@ -133,14 +172,14 @@ export function runChecks(commands: readonly string[], artifacts: string, label:
     const first = attempt(command);
     let tries = 1;
     let last = first;
-    while (last.code !== 0 && !last.isAtDeadline && tries < ATTEMPTS && deadline - Date.now() > 0) {
+    while (last.code !== 0 && last.timedOutMs === undefined && tries < ATTEMPTS && deadline - Date.now() > 0) {
       write(path, record(label, results, command, true));
       last = attempt(command);
       tries++;
     }
     if (last.code === 0 && tries > 1) results.push({ command, code: 0, tail: last.tail, flaky: { code: first.code, tail: first.tail } });
-    else if (tries > 1) results.push({ command, code: last.code, tail: `${last.tail}\nFailed each time it ran (${tries} attempts).` });
-    else results.push({ command, code: last.code, tail: last.tail });
+    else if (tries > 1) results.push({ ...last, command, tail: `${last.tail}\nFailed each time it ran (${tries} attempts).` });
+    else results.push({ ...last, command });
   }
   write(path, record(label, results));
   recordFlaky(artifacts, label, results);
