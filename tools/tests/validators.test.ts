@@ -7,7 +7,7 @@ import { draftProblems, frontier, topoOrder } from '../../.shared/tickets.ts';
 import { DISCLAIMER, outcomeProblems } from '../../.shared/triage.ts';
 import { mapProblems, replaceSection, appendToSection, renderMap } from '../../.shared/wayfinder.ts';
 import { field, readTicket, setField } from '../../.shared/local.ts';
-import { ATTEMPTS, CHECK_BUDGET_MS, flakyChecks, flakyLine, runChecks } from '../../.shared/checks.ts';
+import { ATTEMPTS, CHECK_BUDGET_MS, checkLimitMs, describeResult, flakyChecks, flakyLine, runChecks } from '../../.shared/checks.ts';
 import { RUNS, TIMEOUT_MS as LOOP_TIMEOUT_MS } from '../../.shared/loop.ts';
 import { approvedAsShown, BARE_APPROVAL } from '../../.shared/approval.ts';
 
@@ -335,14 +335,38 @@ describe('runChecks', () => {
   test('a gate whose budget runs out stops the running command and records the rest as not run', () => {
     const artifacts = mkdtempSync(join(tmpdir(), 'lril-checks-'));
     const started = Date.now();
-    const results = runChecks(['true', 'sleep 5', 'true'], artifacts, 'gate', 1500);
+    const results = runChecks(['true', 'sleep 5', 'true'], artifacts, 'gate', { budgetMs: 1500 });
     expect(Date.now() - started).toBeLessThan(4500);
     expect(results.map(result => [result.code === 0, result.notRun === true])).toEqual([[true, false], [false, false], [false, true]]);
     expect(results[1]?.tail).toContain('Stopped at the end of the gate');
     const record = require('node:fs').readFileSync(join(artifacts, 'checks', 'gate.md'), 'utf8') as string;
-    expect(record).toContain('## `sleep 5` exited');
+    expect(record).toContain('## `sleep 5` timed out after');
     expect(record).toContain('## `true` was not run');
   });
+
+  test('a command that times out runs once, and is recorded as timed out rather than as exited 1', () => {
+    const artifacts = mkdtempSync(join(tmpdir(), 'lril-checks-'));
+    const counter = join(artifacts, 'runs').replace(/\\/g, '/');
+    const slow = `echo x >> '${counter}'; sleep 60`;
+    const results = runChecks([slow, 'true'], artifacts, 'verify', { limitMs: 4000 });
+    expect(results.map(result => result.code === 0)).toEqual([false, true]);
+    expect(describeResult(results[0]!)).toBe('timed out after 4 s');
+    expect(results[0]?.tail).not.toContain('Failed each time');
+    expect(results[0]?.tail).not.toContain("gate's");
+    const read = (path: string) => require('node:fs').readFileSync(path, 'utf8') as string;
+    expect(read(counter).trim().split('\n')).toHaveLength(1);
+    const record = read(join(artifacts, 'checks', 'verify.md'));
+    expect(record).toContain(`## \`${slow}\` timed out after 4 s`);
+    expect(record).not.toContain('exited 1');
+    expect(flakyChecks(artifacts)).toEqual([]);
+  }, 60_000);
+
+  test('a command that fails by itself, saying it timed out, is still run again', () => {
+    const artifacts = mkdtempSync(join(tmpdir(), 'lril-checks-'));
+    const results = runChecks(['echo timed out; exit 1'], artifacts, 'verify', { limitMs: 20_000 });
+    expect(describeResult(results[0]!)).toBe('exit 1');
+    expect(results[0]?.tail).toContain(`Failed each time it ran (${ATTEMPTS} attempts).`);
+  }, 60_000);
 
   test('a command that fails, then passes when run again, passes and is recorded as flaky', () => {
     const artifacts = mkdtempSync(join(tmpdir(), 'lril-checks-'));
@@ -382,5 +406,20 @@ describe('runChecks', () => {
     // The same gate resumed: its command passes first time now, so it is no longer flaky.
     runChecks([flaky], artifacts, 'implement');
     expect(flakyChecks(artifacts)).toEqual([]);
+  });
+});
+
+describe('checkLimitMs', () => {
+  test('is 20 minutes unless it is set, in minutes', () => {
+    expect(checkLimitMs(undefined)).toBe(20 * 60_000);
+    expect(checkLimitMs('45')).toBe(45 * 60_000);
+    expect(checkLimitMs(' 0.5 ')).toBe(30_000);
+    expect(checkLimitMs(String(CHECK_BUDGET_MS / 60_000))).toBe(CHECK_BUDGET_MS);
+  });
+
+  test('refuses what is not a positive number of minutes within the gate budget, naming the setting', () => {
+    for (const bad of ['', ' ', '0', '0.0', '-5', 'NaN', 'Infinity', '20m', '1e3', '0x10', '1,5', '0.0000001', '56']) {
+      expect(() => checkLimitMs(bad)).toThrow('LRIL_CHECK_TIMEOUT_MINUTES');
+    }
   });
 });

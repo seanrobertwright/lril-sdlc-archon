@@ -1,11 +1,13 @@
 /** Load the spec's task graph, snapshot the spec, and pin the integration branch's start. */
 import { join, resolve } from 'node:path';
+import { checkLimitMs } from '../../.shared/checks.ts';
 import { loadGraph, readState, specText, statePaths, writeState } from '../../.shared/graph.ts';
 import { artifactsDir, emit, run, trimmed } from '../../.shared/io.ts';
 import { write } from '../../.shared/local.ts';
 import { exec, git } from '../../.shared/proc.ts';
 
 run(() => {
+  checkLimitMs(); // A bad limit is refused now, not at a gate hours later.
   const artifacts = artifactsDir();
   const ref = trimmed(process.env.INPUTS_SPEC) || trimmed(process.env.ARGUMENTS);
   const graph = loadGraph(ref);

@@ -13,7 +13,7 @@
  */
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ATTEMPTS, declaredCommands, runChecks } from './checks.ts';
+import { ATTEMPTS, declaredCommands, describeResult, runChecks } from './checks.ts';
 import { note } from './io.ts';
 import { write } from './local.ts';
 import { exec, git, tryGit } from './proc.ts';
@@ -105,7 +105,7 @@ export function gate(verdict: ImplementerVerdict, startSha: string, artifacts: s
     if (failed.length > 0) {
       throw new Error(
         `${notGreen}\n\n${failed.length} of ${results.length} declared check(s) also failed when the gate ran them:\n` +
-          failed.map(result => `$ ${result.command} (${result.notRun ? 'not run' : `exit ${result.code}`})\n${result.tail}`).join('\n\n') +
+          failed.map(result => `$ ${result.command} (${describeResult(result)})\n${result.tail}`).join('\n\n') +
           resumeLine(),
       );
     }
@@ -145,7 +145,7 @@ export function verify(options: {
   if (failed.length > 0) {
     throw new Error(
       `${failed.length} of ${results.length} check(s) failed when re-run or were not run:\n` +
-        failed.map(result => `$ ${result.command} (${result.notRun ? 'not run' : `exit ${result.code}`})\n${result.tail}`).join('\n\n') +
+        failed.map(result => `$ ${result.command} (${describeResult(result)})\n${result.tail}`).join('\n\n') +
         resumeLine(),
     );
   }

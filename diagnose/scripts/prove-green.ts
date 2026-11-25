@@ -4,7 +4,7 @@
  * and the fix is committed.
  */
 import { artifactsDir, emit, run, trimmed } from '../../.shared/io.ts';
-import { RUNS, runLoop, TIMEOUT_MS } from '../../.shared/loop.ts';
+import { ending, RUNS, runLoop, TIMEOUT_MS } from '../../.shared/loop.ts';
 import { exec, git, shell } from '../../.shared/proc.ts';
 
 run(() => {
@@ -22,13 +22,13 @@ run(() => {
   // A regression test that is the loop command itself passes when the loop does; run it once.
   if (regression !== '' && regression !== command) {
     const result = shell(regression, TIMEOUT_MS);
-    extra.push(`## Regression test: exit ${result.code}`, '', `\`${regression}\``, '');
-    if (result.code !== 0) throw new Error(`The regression test \`${regression}\` fails (exit ${result.code}).`);
+    extra.push(`## Regression test: ${ending(result)}`, '', `\`${regression}\``, '');
+    if (result.code !== 0) throw new Error(`The regression test \`${regression}\` fails (${ending(result)}).`);
   } else if (regression === '' && noSeam === '') {
     throw new Error('No regression test, and no documented reason why no correct seam exists.');
   }
   const seconds = runLoop(command, 'green', artifactsDir(), (result, attempt) => {
-    if (result.code !== 0) throw new Error(`Run ${attempt} of \`${command}\` still fails after the fix (exit ${result.code}).`);
+    if (result.code !== 0) throw new Error(`Run ${attempt} of \`${command}\` still fails after the fix (${ending(result)}).`);
   }, extra);
   emit({ runs: RUNS, seconds });
 });

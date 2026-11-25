@@ -65,7 +65,7 @@ Matt's skills say what "done" means. The pack checks it with code wherever it ca
 | Plugin version | `setup` | `mattpocock-skills` is installed, enabled, and at v1.3 or later |
 | Shape is publishable | `idea-to-tickets` | the spec has every `/to-spec` section; tickets have acceptance criteria, real blockers, and no cycles. The interview loop can't end until this passes. |
 | Green | `implement`, `implement-spec` (per ticket) | the implementer declared green and named its type-check, lint and test commands; the work is committed; nothing is left dirty. This gate runs no checks for a green implementer: it records the commands for Verified. An implementer that met every acceptance criterion but did not report green (a check that failed only in its own sandbox, or was still running when it reported) has its declared commands run here instead, and passes only if every one of them does. |
-| Verified | `implement`, `implement-spec` (once, on the final tree) | **the recorded check commands are re-run here, once**, after the review fixes and the merge with the base, and pass. The review fixer and the merge resolver run only the type-check and the tests covering what they touched; this re-run decides, not their own report. A command that fails is run once more. One that passes then counts as passed but is marked **flaky** in the check record, the outcome and the PR body. Files a check command rewrites (a build that regenerates committed output) are stashed and named in the record and the PR body, not a failure. A gate that fails on its checks ends with the `archon workflow resume` command that reruns it. |
+| Verified | `implement`, `implement-spec` (once, on the final tree) | **the recorded check commands are re-run here, once**, after the review fixes and the merge with the base, and pass. The review fixer and the merge resolver run only the type-check and the tests covering what they touched; this re-run decides, not their own report. A command that fails is run once more. One that passes then counts as passed but is marked **flaky** in the check record, the outcome and the PR body. A command that runs past its limit (20 minutes unless [set](#the-limit-on-one-check-command)) is stopped with everything it started, recorded as timed out, and not run again. Files a check command rewrites (a build that regenerates committed output) are stashed and named in the record and the PR body, not a failure. A gate that fails on its checks ends with the `archon workflow resume` command that reruns it. |
 | Up to date with the base | `implement`, `implement-spec` (before the PR) | the branch merges the base branch (`origin/<base>`, fetched just now) before the PR is written, so the PR opens against the base it will land on. A base that origin doesn't have falls back to origin's default branch, and the PR targets that. A conflicted merge goes to one fresh resolver, which commits the merge or aborts it. Verified runs after either. The PR body's diff is taken against that base. It merges and never rebases, because the branch may already be pushed. |
 | Red-capable loop | `diagnose` | the feedback-loop command **fails on the unfixed code, with the user's symptom** in the output. The command itself makes a non-deterministic bug reproduce reliably, so it runs once. No red loop, no hypotheses. |
 | Green loop | `diagnose` | the same command passes, the regression test passes (or the missing seam is documented), and no `[DEBUG-…]` lines are left in the diff |
@@ -131,6 +131,17 @@ archon workflow run seanrobertwright/lril-sdlc:implement --branch feat/saved-car
 ```
 
 With the local tracker, pass paths instead: `--input spec=.scratch/saved-cards/spec.md`, `--input ticket=.scratch/saved-cards/issues/03-saved-cards.md`.
+
+#### The limit on one check command
+
+`gate`, `ticket-gate` and `verify` give each check command 20 minutes. Set `LRIL_CHECK_TIMEOUT_MINUTES` to change that, for a project in its `.archon/config.yaml`:
+
+```yaml
+env:
+  LRIL_CHECK_TIMEOUT_MINUTES: "45"
+```
+
+For one run, put the same `env:` in a file and pass it with `--config`, on an Archon version that has that flag. The value is a number of minutes above 0 and at most 55, which is the whole of what one gate spends on all its commands together. Anything else is refused when the run starts.
 
 ### 4. Look back
 

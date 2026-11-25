@@ -6,13 +6,19 @@
 import { join } from 'node:path';
 import { note } from './io.ts';
 import { write } from './local.ts';
-import { shell } from './proc.ts';
+import { type Result, shell } from './proc.ts';
 
 export const RUNS = 1;
 export const TIMEOUT_MS = 10 * 60 * 1000;
 
+/** How a run of the loop, or of the regression test, ended. */
+export function ending(result: Pick<Result, 'code' | 'timedOut'>): string {
+  return result.timedOut ? `timed out after ${TIMEOUT_MS / 60_000} min` : `exit ${result.code}`;
+}
+
 export interface LoopRun {
   readonly code: number;
+  readonly timedOut: boolean;
   readonly output: string;
 }
 
@@ -31,8 +37,8 @@ export function runLoop(
     for (let attempt = 1; attempt <= RUNS; attempt++) {
       const result = shell(command, TIMEOUT_MS);
       const output = `${result.stdout}\n${result.stderr}`;
-      lines.push(`## Run ${attempt}: exit ${result.code}`, '', '```text', output.trimEnd().split('\n').slice(-30).join('\n'), '```', '');
-      judge({ code: result.code, output }, attempt);
+      lines.push(`## Run ${attempt}: ${ending(result)}`, '', '```text', output.trimEnd().split('\n').slice(-30).join('\n'), '```', '');
+      judge({ code: result.code, timedOut: result.timedOut, output }, attempt);
     }
   } finally {
     write(join(artifacts, 'loop', `${mode}.md`), [...lines, ...extra].join('\n'));

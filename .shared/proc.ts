@@ -6,24 +6,46 @@
  */
 import { existsSync } from 'node:fs';
 import { win32 } from 'node:path';
+import { contain } from './stop.ts';
 
 export interface Result {
+  /** Never 0 for a command that timed out. */
   readonly code: number;
+  /** It ran past `timeoutMs` and was stopped. */
+  readonly timedOut: boolean;
   readonly stdout: string;
   readonly stderr: string;
 }
 
+/**
+ * Run a command to its end, or to `timeoutMs`. One that runs past it is killed with
+ * everything it started (see `contain` for the limits of that) before this returns. On
+ * Windows, when something is left running, this throws, so nothing runs beside it.
+ */
 export function exec(argv: readonly string[], options: { input?: string; cwd?: string; timeoutMs?: number } = {}): Result {
-  const result = Bun.spawnSync([...argv], {
+  const contained = options.timeoutMs === undefined ? undefined : contain(argv);
+  const result = Bun.spawnSync([...(contained?.argv ?? argv)], {
     stdout: 'pipe',
     stderr: 'pipe',
     stdin: options.input === undefined ? 'ignore' : new TextEncoder().encode(options.input),
     cwd: options.cwd,
     timeout: options.timeoutMs,
+    // A command can trap SIGTERM and run on, or exit 0.
+    killSignal: 'SIGKILL',
+    detached: contained?.detached ?? false,
     env: childEnv(),
   });
+  const timedOut = result.exitedDueToTimeout === true;
+  if (timedOut) {
+    try {
+      contained?.stop(result.pid);
+    } catch (error) {
+      throw new Error(`\`${argv.at(-1)}\` timed out. ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
   return {
-    code: result.exitCode ?? 1,
+    code: timedOut ? result.exitCode || 1 : (result.exitCode ?? 1),
+    timedOut,
     stdout: result.stdout.toString(),
     stderr: result.stderr.toString(),
   };

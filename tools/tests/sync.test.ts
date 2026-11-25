@@ -156,6 +156,23 @@ describe('verify', () => {
     expect(result.err).toContain(`archon workflow resume ${runId} --detach`);
   });
 
+  test('a check that times out fails the run as timed out, at the limit the project set', () => {
+    const { work, start, artifacts } = setup();
+    writeFileSync(join(artifacts, 'checks', 'commands.json'), JSON.stringify(['sleep 50']));
+    const result = verify(work, start, artifacts, {}, { LRIL_CHECK_TIMEOUT_MINUTES: '0.05' });
+    expect(result.code).not.toBe(0);
+    expect(result.err).toContain('$ sleep 50 (timed out after 3 s)');
+    expect(result.err).not.toContain('exit 1');
+  });
+
+  test('a limit that is not a positive number is refused before any check runs', () => {
+    const { work, start, artifacts } = setup();
+    const result = verify(work, start, artifacts, {}, { LRIL_CHECK_TIMEOUT_MINUTES: 'forty' });
+    expect(result.code).not.toBe(0);
+    expect(result.err).toContain('LRIL_CHECK_TIMEOUT_MINUTES must be a number of minutes');
+    expect(existsSync(join(artifacts, 'checks', 'verify.md'))).toBe(false);
+  });
+
   test('a review fixer that reports not green is overruled by checks that pass', () => {
     const { work, start, artifacts } = setup();
     const result = verify(work, start, artifacts, { fixer: { done: true, green: false, summary: 'build still running' } });
